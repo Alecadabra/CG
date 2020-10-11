@@ -1,3 +1,29 @@
+# Assignment
+
+## Building
+
+### Configure changes to project structure
+
+```bash
+# Make sure to first edit CMakeLists.txt
+cd build
+cmake ..
+```
+
+### Compile
+```bash
+cd build
+make
+```
+
+## Run
+```bash
+cd build/bin
+./<chapter>/<execname>
+```
+
+<!-- Old OpenGL Readme
+
 # learnopengl.com code repository
 Contains code samples for all tutorials of [https://learnopengl.com](https://learnopengl.com). 
 
@@ -33,3 +59,12 @@ make -j8
 Polytonic created a project called [Glitter](https://github.com/Polytonic/Glitter) that is a dead-simple boilerplate for OpenGL. 
 Everything you need to run a single LearnOpenGL Project (including all libraries) and just that; nothing more. 
 Perfect if you want to follow along with the tutorials, without the hassle of having to manually compile and link all third party libraries!
+
+# License
+
+All code samples, unless explicitly stated otherwise, are licensed under the terms of the CC BY-NC 4.0 license as published by Creative Commons, either version 4 of the License, or (at your option) any later version.
+
+See https://learnopengl.com/About for more information.
+
+
+-->
