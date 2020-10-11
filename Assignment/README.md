@@ -18,8 +18,9 @@ make
 
 ## Run
 ```bash
-cd build/bin
-./<chapter>/<execname>
+cd build
+./bin/<chapter>/<execname>
+# Eg. ./bin/4.learnOpenGL/4.learnOpenGL__1.hello_triangle 
 ```
 
 <!-- Old OpenGL Readme
