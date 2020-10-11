@@ -35,7 +35,7 @@ const char *fragmentShaderSrc =
     "}\0"
 ;
 
-int main() {
+int main(int argc, char* argv[]) {
 
     // Load GLFW and Create a Window
     glfwInit();
@@ -73,13 +73,19 @@ int main() {
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     // Give callback for any window size changes
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);    
 
+    // A rectangle using triangles
     float verticies[] = {
-        //  x,     y,    z
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
+        //  x,     y,     z
+         0.5f,  0.5f,  0.0f, // top right
+         0.5f, -0.5f,  0.0f, // bottom right
+        -0.5f, -0.5f,  0.0f, // bottom left
+        -0.5f,  0.5f,  0.0f  // top left
+    };
+    unsigned int indicies[] = {
+        0, 1, 3, // 1st triangle
+        1, 2, 3  // 2nd triangle
     };
 
     // Error checking values
@@ -148,9 +154,13 @@ int main() {
     unsigned int vao;
     glGenVertexArrays(1, &vao);
 
+    // Create element buffer object
+    unsigned int ebo;
+    glGenBuffers(1, &ebo);
+
     // Initialise
 
-    // Bind object
+    // Bind vao
     glBindVertexArray(vao);
     // Bind to array buffer target
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -160,6 +170,14 @@ int main() {
         sizeof(verticies),
         verticies,
         GL_STATIC_DRAW // The data is set once and used many times
+    );
+    // Copy the indicies array in a element buffer
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        sizeof(indicies),
+        indicies,
+        GL_STATIC_DRAW
     );
     // Set vertex attribute pointers
     glVertexAttribPointer(
@@ -190,14 +208,28 @@ int main() {
         // Bind vao
         glBindVertexArray(vao);
 
+        // Bind ebo
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+
         // Draw the triangle!
+        glDrawElements(
+            GL_TRIANGLES, // Primitive we are drawing
+            6, // Number of elements to draw (6 verticies)
+            GL_UNSIGNED_INT, // Type of the incicies
+            0 // Offset in the ebo
+        );
+        /* Old draw arrays method
         glDrawArrays(
             GL_TRIANGLES, // Primitive we are drawing
             0, // Starting idx
             3 // Number of verticies to draw
         );
+         */
 
         // Finish up
+
+        // Unbind the vao
+        glBindVertexArray(0);
 
         // Swap the colour buffer
         glfwSwapBuffers(window);
@@ -220,4 +252,17 @@ void processInput(GLFWwindow *window) {
     {
         glfwSetWindowShouldClose(window, true);
     }
+
+    // Handle wireframe when `w` is pressed
+    static bool wireframe = false;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        wireframe = !wireframe;
+        if (wireframe) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        } else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+    }
+    
 }
