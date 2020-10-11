@@ -42,8 +42,11 @@ int main(int argc, char* argv[]) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); macOS only
+    #ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); macOS only
+    #endif
     // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
     GLFWwindow* window = glfwCreateWindow(
         WINDOW_WIDTH,
         WINDOW_HEIGHT,
@@ -63,8 +66,7 @@ int main(int argc, char* argv[]) {
     glfwMakeContextCurrent(window);
 
     // Load GLAD
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD\n";
         return EXIT_FAILURE;
     }
@@ -248,15 +250,13 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 void processInput(GLFWwindow *window) {
     // Handle Esc
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
 
     // Handle wireframe when `w` is pressed
     static bool wireframe = false;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         wireframe = !wireframe;
         if (wireframe) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
