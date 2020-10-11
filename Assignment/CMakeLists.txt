@@ -111,6 +111,7 @@ set(3.openGL_tutorial
 
 set(4.learnOpenGL
     1.hello_triangle
+    2.shaders
 )
 
 configure_file(configuration/root_directory.h.in configuration/root_directory.h)
