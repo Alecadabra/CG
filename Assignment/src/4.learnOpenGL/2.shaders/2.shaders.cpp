@@ -1,6 +1,9 @@
 // Local Headers
 #include "2.shaders.h"
 
+// Get the root directory that defines logl_root
+#include "root_directory.h"
+
 // System Headers
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -73,7 +76,17 @@ int main(int argc, char* argv[]) {
         1, 2, 3  // 2nd triangle
     };
 
-    Shader shader("2.shader.vs", "2.shader.fs");
+    std::stringstream vertexPathStream, fragmentPathStream;
+    
+    vertexPathStream << logl_root
+        << "/src/4.learnOpenGL/2.shaders/2.shader.vs";
+    fragmentPathStream << logl_root
+        << "/src/4.learnOpenGL/2.shaders/2.shader.fs";
+
+    Shader shader(
+        vertexPathStream.str().c_str(),
+        fragmentPathStream.str().c_str()
+    );
 
     // Create vertex buffer object
     unsigned int vbo;

@@ -23,9 +23,8 @@
 //     #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-// Define Some Constants
-const int mWidth = 1280;
-const int mHeight = 800;
+// Error message log char[] size
+#define LOG_SIZE 512
 
 // Shader class
 class Shader {
@@ -36,13 +35,13 @@ public:
 
     // Constructor
     Shader(const char* vertexPath, const char* fragmentPath) {
-        char* vertexShaderCode = nullptr;
-        char* fragmentShaderCode = nullptr;
+        std::string vertexShaderCode;
+        std::string fragmentShaderCode;
         readShaderFiles(
             vertexPath, fragmentPath, // Sources
             vertexShaderCode, fragmentShaderCode // Returns
         );
-        compileShaders(vertexShaderCode, fragmentShaderCode);
+        compileShaders(vertexShaderCode.c_str(), fragmentShaderCode.c_str());
     }
 
     // Use/activate the shader
@@ -66,17 +65,11 @@ public:
 private:
 
     void readShaderFiles(
-        const char* vertexPath,
-        const char* fragmentPath,
-        const char* outVertexCode,
-        const char* outFragmentCode
+        const char* vertexPath, const char* fragmentPath, //  Value
+        std::string& outVertexCode, std::string& outFragmentCode // Reference
     ) {
-        std::string vertexSrc;
-        std::string fragmentSrc;
-        std::ifstream vertexFile;
-        std::ifstream fragmentFile;
-        std::stringstream vertexStream;
-        std::stringstream fragmentStream;
+        std::ifstream vertexFile, fragmentFile; // File streams
+        std::stringstream vertexStream, fragmentStream; // String streams
 
         // Set up ifstreams to throw exceptions
         vertexFile.exceptions(
@@ -100,31 +93,19 @@ private:
             fragmentFile.close();
 
             // Convert streams to strings
-            vertexSrc = vertexStream.str();
-            fragmentSrc = fragmentStream.str();
-        } catch (std::ifstream::failure e) {
-            std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ\n";
+            outVertexCode = vertexStream.str();
+            outFragmentCode = fragmentStream.str();
+            
+        } catch (std::ifstream::failure&) {
+            std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ\n"
+                << "Error: " << strerror(errno) << std::endl;
         }
-        
-        outVertexCode = vertexSrc.c_str();
-        outFragmentCode = fragmentSrc.c_str();
-
-        // TODO debug
-        std::cout << "DEBUG: vertex and fragment src files\n"
-            << outVertexCode << std::endl
-            << outFragmentCode << std::endl;
     }
 
     void compileShaders(
         const char* vertexShaderSrc,
         const char* fragmentShaderSrc
     ) {
-        // TODO debug
-        std::cout << "DEBUG: vertex and fragment src files\n"
-            << vertexShaderSrc << std::endl
-            << fragmentShaderSrc << std::endl;
-
-        #define LOG_SIZE 512
         unsigned int vertexShader, fragmentShader;
         int success;
         char infoLog[LOG_SIZE];
@@ -151,7 +132,7 @@ private:
         glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
         if (!success) {
             glGetShaderInfoLog(fragmentShader, LOG_SIZE, nullptr, infoLog);
-            std::cout << "ERROR::FRAGMENT::VERTEX::COMPILATION_FAILED\n"
+            std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n"
                 << infoLog << std::endl;
         }
 
