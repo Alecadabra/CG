@@ -114,6 +114,7 @@ set(4.learnOpenGL
     2.shaders
     3.textures
     4.transformations
+    5.coordinates
 )
 
 configure_file(configuration/root_directory.h.in configuration/root_directory.h)
