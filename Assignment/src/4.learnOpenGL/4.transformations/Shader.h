@@ -9,6 +9,10 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+// GLM
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 // Error message log char[] size
 #define LOG_SIZE 512
@@ -47,6 +51,18 @@ public:
 
     void setFloat(const std::string &name, float value) const {
         glUniform1f(glGetUniformLocation(this->id, name.c_str()), value);
+    }
+
+    void setMatrix4(
+        const std::string& name,
+        glm::mat4& value
+    ) const {
+        glUniformMatrix4fv(
+            glGetUniformLocation(this->id, name.c_str()),
+            1, // Number of matricies
+            GL_FALSE, // Transpose the matrix
+            glm::value_ptr(value) // Convert to glm's matrix storage
+        );
     }
 
 private:

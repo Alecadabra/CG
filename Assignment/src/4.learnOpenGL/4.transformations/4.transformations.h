@@ -11,6 +11,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <GLFW/glfw3.h>
 
 // Util headers
 #include <string>
@@ -22,5 +23,9 @@
 // To use stb_image, add this in *one* C++ source file.
 //     #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+// Forward declarations
+void framebuffer_size_callback(GLFWwindow *, int, int);
+void processInput(GLFWwindow *);
 
 #endif 

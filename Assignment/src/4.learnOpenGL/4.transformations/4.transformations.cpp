@@ -23,9 +23,6 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
-void framebuffer_size_callback(GLFWwindow *, int, int);
-void processInput(GLFWwindow *);
-
 int main(int argc, char* argv[]) {
 
     // Load GLFW and Create a Window
@@ -36,7 +33,6 @@ int main(int argc, char* argv[]) {
     #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     #endif
-    // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
     GLFWwindow* window = glfwCreateWindow(
         WINDOW_WIDTH,
@@ -70,12 +66,12 @@ int main(int argc, char* argv[]) {
 
     // A rectangle using triangles
     float verticies[] = {
-        //  positions            colours           texture coords
-        //  x,     y,     z,     r,    g,    b,    x,    y
-         0.5f,  0.5f,  0.0f,  0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top right
-         0.5f, -0.5f,  0.0f,  1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f,  0.0f,  0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f,  0.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f  // top left
+        //  positions            colours            texture coords
+        //  x,     y,     z,     r,    g,    b,     x,    y
+         0.5f,  0.5f,  0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 1.0f, // top right
+         0.5f, -0.5f,  0.0f,  1.0f, 1.0f, 0.0f,  1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f,  0.0f,  0.0f, 1.0f, 0.0f,  0.0f, 0.0f, // bottom left
+        -0.5f,  0.5f,  0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 1.0f  // top left
     };
     unsigned int indicies[] = {
         0, 1, 3, // 1st triangle
@@ -201,6 +197,23 @@ int main(int argc, char* argv[]) {
     shader.setInt("texture1", 0);
     shader.setInt("texture2", 1);
 
+    // Rotate container
+    /*
+    glm::mat4 trans = glm::mat4(1.0f);
+    // 2nd, rotate 90 degrees about z
+    trans = glm::rotate(
+        trans,
+        glm::radians(90.0f),
+        glm::vec3(0.0, 0.0, 1.0)
+    );
+    // 1st, scale by 0.5
+    trans = glm::scale(
+        trans,
+        glm::vec3(0.5, 0.5, 0.5)
+    );
+    shader.setMatrix4("transform", trans);
+     */
+
     // Rendering Loop
     while (!glfwWindowShouldClose(window)) {
 
@@ -217,6 +230,19 @@ int main(int argc, char* argv[]) {
         glActiveTexture(GL_TEXTURE1);
         texture2.bind();
 
+        // Spin
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::translate(
+            trans,
+            glm::vec3(0.5f, -0.5f, 0.0f)
+        );
+        trans = glm::rotate(
+            trans,
+            (float)cos(glfwGetTime()),
+            glm::vec3(0.0f, 0.0f, 1.0f)
+        );
+        shader.setMatrix4("transform", trans);
+
         // Use the shader program
         shader.use();
 
@@ -226,7 +252,7 @@ int main(int argc, char* argv[]) {
         // Bind ebo
         //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
-        // Draw the triangle!
+        // Draw the triangles
         glDrawElements(
             GL_TRIANGLES, // Primitive we are drawing
             6, // Number of elements to draw (6 verticies)
