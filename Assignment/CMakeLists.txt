@@ -59,6 +59,7 @@ set(CHAPTERS
     2.lighting
     3.openGL_tutorial
     4.learnOpenGL
+    assignment
 )
 
 set(1.getting_started
@@ -116,6 +117,10 @@ set(4.learnOpenGL
     4.transformations
     5.coordinates
     6.camera
+)
+
+set(assignment
+    assignment    
 )
 
 configure_file(configuration/root_directory.h.in configuration/root_directory.h)
