@@ -20,13 +20,13 @@ glm::vec3 light_pos(0.0f, 1.0f, 0.1f);
 float delta_time = 0.0f;	// time between current frame and last frame
 float last_frame = 0.0f;
 
+int INPUT_DELAY = 0;
+
 //Toggle (Animation or states)
 bool BUTTON_PRESSED = false;
-int BUTTON_DELAY = 0;
 bool BUTTON_CLOSE_ENOUGH = false;
 
 bool SHOW_COORDINATE = false;
-int SHOW_DELAY = 0;
 
 
 //Animation Variables
@@ -37,23 +37,15 @@ float curtin_translate_y = 0.0;
 // This prevents accidental burst repeat clicking of the key.
 void update_delay()
 {
-	if (BUTTON_DELAY > 0) {
-		BUTTON_DELAY -= 1;
-	}
-
-	if (SHOW_DELAY > 0) {
-		SHOW_DELAY -= 1;
+	if (INPUT_DELAY > 0) {
+		INPUT_DELAY -= 1;
 	}
 }
 
 // Toggle button pressing only if the camera is close enough.
 void toggle_button_distance(glm::vec3 button_pos)
 {
-	if (glm::length(camera.Position - button_pos) <= 1.6f) {
-		BUTTON_CLOSE_ENOUGH = true;
-	} else {
-		BUTTON_CLOSE_ENOUGH = false;
-	}
+	BUTTON_CLOSE_ENOUGH = glm::length(camera.Position - button_pos) <= 1.6f;
 }
 
 int main()
@@ -519,16 +511,11 @@ int main()
 // ---------------------------------------------------------------------------------------------------------
 void process_input(GLFWwindow *window)
 {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	// Window closing
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
+	}
 
-	/*float cameraSpeed;
-
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
-		cameraSpeed = 2.5 * delta_time; 
-	else
-		cameraSpeed = 2.5 * delta_time * 2;	// double speed with "Shift" pressed
-		 */
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         camera.ProcessKeyboard(FORWARD, delta_time);
@@ -543,38 +530,16 @@ void process_input(GLFWwindow *window)
         camera.ProcessKeyboard(RIGHT, delta_time);
 	}
 
-	/*
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera_pos += cameraSpeed * camera_front;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera_pos -= cameraSpeed * camera_front;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera_pos -= glm::normalize(glm::cross(camera_front, camera_up)) * cameraSpeed;
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera_pos += glm::normalize(glm::cross(camera_front, camera_up)) * cameraSpeed;
-		*/
-
-
 	//toggle red button
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && BUTTON_DELAY == 0 && BUTTON_CLOSE_ENOUGH == true)
-	{
-		BUTTON_DELAY = 20;
-		if(BUTTON_PRESSED == false) {
-			BUTTON_PRESSED = true;
-		} else {
-			BUTTON_PRESSED = false;
-		}
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && INPUT_DELAY == 0 && BUTTON_CLOSE_ENOUGH == true) {
+		INPUT_DELAY = 20;
+		BUTTON_PRESSED = !BUTTON_PRESSED;
 	}
 
 	//toggle coordinate visibility
-	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && SHOW_DELAY == 0)
-	{
-		SHOW_DELAY = 20;
-		if(SHOW_COORDINATE == false) {
-			SHOW_COORDINATE = true;
-		} else {
-			SHOW_COORDINATE = false;
-		}
+	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && INPUT_DELAY == 0) {
+		INPUT_DELAY = 20;
+		SHOW_COORDINATE = !SHOW_COORDINATE;
 	}
 }
 
