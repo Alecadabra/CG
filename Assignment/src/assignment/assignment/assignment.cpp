@@ -322,9 +322,12 @@ int main()
 
 
 		//Street
-		model = glm::mat4();
+		Box street(tex_street_diffuse, tex_street_specular);
+		street.scale = glm::vec3(3.0f, 0.001f, 7.0f);
+		street.render(lighting_shader, VAO_box);
+		/*model = glm::mat4();
 		model = glm::scale(model, glm::vec3(3.0f, 0.001f, 7.0f));
-		renderBox(model, tex_street_diffuse, tex_street_specular, lighting_shader);
+		renderBox(model, tex_street_diffuse, tex_street_specular, lighting_shader);*/
 
 		//Right wall
 		model = glm::mat4();
