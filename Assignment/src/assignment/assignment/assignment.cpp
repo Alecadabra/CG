@@ -2,7 +2,7 @@
 
 // settings
 const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 800;
+const unsigned int SCR_HEIGHT = 600;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.5f, 3.0f));
@@ -240,7 +240,7 @@ int main()
 			);
 		} else {
 			projection = glm::ortho(
-				0.0f, (float)SCR_WIDTH, 0.0f, (float)SCR_HEIGHT,
+				0.0f, 1.0f/*(float)SCR_WIDTH*/, 0.0f, 1.0f/*(float)SCR_HEIGHT / 2*/,
 				0.1f, 300.0f // Clipping planes
 			);
 		}
@@ -330,17 +330,17 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
-		//Grass
+		//Right wall
 		glBindVertexArray(VAO_box);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex_grass_diffuse);
+		glBindTexture(GL_TEXTURE_2D, tex_marble_diffuse);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_grass_specular);
+		glBindTexture(GL_TEXTURE_2D, tex_marble_specular);
 
 		model = glm::mat4();
-		model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
-		model = glm::scale(model, glm::vec3(7.0f, 0.001f, 7.0f));
+		model = glm::translate(model, glm::vec3(1.5f, 1.5f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.001f, 3.0f, 7.0f));
 
 		lighting_shader.setMat4("model", model);
 
