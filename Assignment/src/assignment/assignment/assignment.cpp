@@ -57,13 +57,6 @@ Box buttonBox(nullptr, nullptr);
 Box buttonCase(&tex_marble_diffuse, &tex_marble_specular);
 Box curtin(&tex_curtin_diffuse, &tex_curtin_specular);
 
-
-// Toggle button pressing only if the camera is close enough.
-/*void toggle_button_distance(glm::vec3 button_pos)
-{
-	BUTTON_CLOSE_ENOUGH = glm::length(camera.Position - button_pos) <= 1.6f;
-}*/
-
 int main()
 {
 	// glfw: initialize and configure
@@ -337,43 +330,7 @@ int main()
 		leftWall.scale = glm::vec3(0.001f, 3.0f, 7.0f);
 		leftWall.render(lighting_shader, VAO_box);
 
-
-		//Table (4 tall boxes for legs & 1 thin box as table top)
-		/*
-		glm::vec3 table_scales[] = {
-			glm::vec3( 1.0f,  0.1f,  1.0f),	//top
-			glm::vec3( 0.1f,  0.5f,  0.1f),//near left
-			glm::vec3( 0.1f,  0.5f,  0.1f),	//near right
-			glm::vec3( 0.1f,  0.5f,  0.1f),//far left
-			glm::vec3( 0.1f,  0.5f,  0.1f),	//far right
-		};
-		glm::vec3 table_positions[] = {
-			glm::vec3( 0.0f,  0.5f,  0.0f),		//top
-			glm::vec3(-0.45f, 0.0f,  0.45f),	//near left
-			glm::vec3( 0.45f, 0.0f,  0.45f),	//near right
-			glm::vec3(-0.45f, 0.0f, -0.45f),	//far left
-			glm::vec3( 0.45f, 0.0f, -0.45f),	//far right
-		};
-
-		glBindVertexArray(VAO_box);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex_wood_diffuse);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_wood_specular);
-
-		for(int tab = 0; tab < 5; tab++)
-		{	
-			model = glm::mat4();
-			model = glm::translate(model, table_positions[tab]);
-			model = glm::scale(model, table_scales[tab]);
-			model = glm::translate(model, glm::vec3(0.0f, 0.5f, 0.0f));
-
-			lighting_shader.setMat4("model", model);
-
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}*/
-
+		// Button
 		unsigned int diffuseTex, specularTex;
 		float buttonHeight;
 		if (BUTTON_PRESSED) {
@@ -385,8 +342,6 @@ int main()
 			specularTex = tex_red_dark_specular;
 			buttonHeight = 0.53f;
 		}
-
-		// Button
 		buttonBox.diffuseTex = &diffuseTex;
 		buttonBox.specularTex = &specularTex;
 		buttonBox.scale = glm::vec3(0.12f,  0.12f,  0.12f);
@@ -401,82 +356,12 @@ int main()
 		BUTTON_CLOSE_ENOUGH = glm::length(camera.Position - glm::vec3(0.0f, 0.56f, 0.25f)) <= 1.6f;
 
 
-		/*
-		//Button on table (1 big box & 1 small box as button)
-		glm::vec3 button_scales[] = {
-			glm::vec3( 0.2f,  0.12f,  0.2f),		//case
-			glm::vec3( 0.12f,  0.12f,  0.12f),		//button
-		};
-
-		float red_button_height = 0.05f;
-		if(BUTTON_PRESSED == true) {red_button_height -= 0.02f;}
-
-		glm::vec3 button_positions[] = {
-			glm::vec3( 0.0f,  0.0f,  0.0f),			//case
-			glm::vec3( 0.0f,  red_button_height,  0.0f),	//button
-		};
-
-		glm::vec3 button_final_location = glm::vec3(0.0f, 0.56f, 0.25f);
-		toggle_button_distance(button_final_location);
-
-		glBindVertexArray(VAO_box);
-		
-		for(int tab = 0; tab < 2; tab++)
-		{	
-			glActiveTexture(GL_TEXTURE0);
-			if(tab == 0)
-			{	
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, tex_marble_diffuse);
-				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_2D, tex_marble_specular);
-			}
-			else
-			{
-				if(BUTTON_PRESSED == false) 	// Not Pressed
-				{
-					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, tex_red_dark_diffuse);
-					glActiveTexture(GL_TEXTURE1);
-					glBindTexture(GL_TEXTURE_2D, tex_red_dark_specular);
-				}
-				else				// Pressed
-				{
-					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, tex_red_bright_diffuse);
-					glActiveTexture(GL_TEXTURE1);
-					glBindTexture(GL_TEXTURE_2D, tex_red_bright_specular);
-				}
-			}
-
-			model = glm::mat4();
-			model = glm::translate(model, button_final_location);
-			model = glm::translate(model, button_positions[tab]);
-			model = glm::scale(model, button_scales[tab]);
-			model = glm::translate(model, glm::vec3(0.0f, 0.5f, 0.0f));
-
-			lighting_shader.setMat4("model", model);
-
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-		*/
-
-
-
 		//Curtin Logo
 		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
 		curtin.angle = curtin_rotate_y;
 		curtin.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
 		curtin.scale = glm::vec3(0.2f, 0.2f, 0.001f);
 		curtin.render(lighting_shader, VAO_box);
-
-
-		/*glBindVertexArray(VAO_box);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex_curtin_diffuse);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_curtin_specular);*/
 
 		//transformation for animation
 		if(BUTTON_PRESSED) {
@@ -485,17 +370,6 @@ int main()
 			if(abs(curtin_translate_y - 360.0f) <= 0.1f) curtin_translate_y = 0.0f;
 			if(abs(curtin_rotate_y - 360.0f) <= 0.1f) curtin_rotate_y = 0.0f;
 		}
-
-		/*glm::mat4 model = glm::mat4();
-		model = glm::translate(model, glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f));
-		model = glm::rotate(model, glm::radians(curtin_rotate_y), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.001f));
-
-		lighting_shader.setMat4("model", model);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);*/
-
-
 
 		// Draw the light source
 		lamp_shader.use();
@@ -512,9 +386,6 @@ int main()
 
 		glBindVertexArray(VAO_light);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
-
 
 
 
