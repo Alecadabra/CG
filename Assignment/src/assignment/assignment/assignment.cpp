@@ -5,13 +5,10 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.5f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
-//glm::vec3 camera_pos   = glm::vec3(0.0f, 0.9f,  3.0f);
-//glm::vec3 camera_front = glm::vec3(0.0f, 0.0f, -1.0f);
-//glm::vec3 camera_up    = glm::vec3(0.0f, 1.0f,  0.0f);
 
 // lighting
 glm::vec3 light_pos(0.0f, 1.0f, 0.1f);
@@ -27,6 +24,8 @@ bool BUTTON_PRESSED = false;
 bool BUTTON_CLOSE_ENOUGH = false;
 
 bool SHOW_COORDINATE = false;
+
+bool PERSPECTIVE_PROJECTION = true;
 
 
 //Animation Variables
@@ -63,10 +62,9 @@ int main()
 	// glfw window creation
 	// --------------------
 	GLFWwindow* window = glfwCreateWindow(
-		SCR_WIDTH, SCR_HEIGHT, "OpenGL Tutorial", nullptr, nullptr
+		SCR_WIDTH, SCR_HEIGHT, "Alec OpenGL Assignment", nullptr, nullptr
 	);
-	if (window == nullptr)
-	{
+	if (window == nullptr) {
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
 		return EXIT_FAILURE;
@@ -75,11 +73,11 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -233,11 +231,19 @@ int main()
 		// for now just set the same for every object. But, you can make it dynamic for various objects.
 
 		// pass projection matrix to shader
-		glm::mat4 projection = glm::perspective(
-			glm::radians(camera.Zoom),
-			(float)SCR_WIDTH / (float)SCR_HEIGHT,
-			0.1f, 300.0f // Clipping planes
-		);
+		glm::mat4 projection;
+		if (PERSPECTIVE_PROJECTION) {
+			projection = glm::perspective(
+				glm::radians(camera.Zoom),
+				(float)SCR_WIDTH / (float)SCR_HEIGHT,
+				0.1f, 300.0f // Clipping planes
+			);
+		} else {
+			projection = glm::ortho(
+				0.0f, (float)SCR_WIDTH, 0.0f, (float)SCR_HEIGHT,
+				0.1f, 300.0f // Clipping planes
+			);
+		}
 		lighting_shader.setMat4("projection", projection);
 
 		// camera/view transformation
@@ -540,6 +546,12 @@ void process_input(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && INPUT_DELAY == 0) {
 		INPUT_DELAY = 20;
 		SHOW_COORDINATE = !SHOW_COORDINATE;
+	}
+
+	// toggle projection mode
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && INPUT_DELAY == 0) {
+		INPUT_DELAY = 20;
+		PERSPECTIVE_PROJECTION = !PERSPECTIVE_PROJECTION;
 	}
 }
 
