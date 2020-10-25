@@ -222,7 +222,10 @@ int main()
 		// light properties
 		lighting_shader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
 
-		if(BUTTON_PRESSED == true)
+		lighting_shader.setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
+		lighting_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+
+		/*if(BUTTON_PRESSED == true)
 		{
 			lighting_shader.setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
 			lighting_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
@@ -231,7 +234,7 @@ int main()
 		{
 			lighting_shader.setVec3("light.diffuse", 0.0f, 0.0f, 0.0f);
 			lighting_shader.setVec3("light.specular", 0.0f, 0.0f, 0.0f);
-		}
+		}*/
 
 		// material properties
         lighting_shader.setFloat("material.shininess", 65.0f);
@@ -258,7 +261,7 @@ int main()
 		lighting_shader.setMat4("view", view);
 
 		//declare transformation matrix
-		glm::mat4 model = glm::mat4();
+		//glm::mat4 model = glm::mat4();
 		/*
 		//example (remember, it is in column matrix position, so the order is reversed.)
 		model = glm::translate(model, glm::vec3(1.0f, 2.0f, 3.0f)); 			// translate by (1.0, 2.0, 3.0)
@@ -276,7 +279,6 @@ int main()
 		//Coordinate System
 		if(SHOW_COORDINATE == true)
 		{
-			
 			glm::vec3 coord_scales[] = {
 				glm::vec3( 100.0f,  0.02f,  0.02f),	//X
 				glm::vec3( 0.02f,  100.0f,  0.02f),	//Y
@@ -284,34 +286,29 @@ int main()
 			};
 
 			glBindVertexArray(VAO_box);
-
-			
 			
 			for(int tab = 0; tab < 3; tab++)
 			{	
-				if(tab == 0) // X
-				{
+				if(tab == 0) { // x
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_2D, tex_red_diffuse);
 					glActiveTexture(GL_TEXTURE1);
 					glBindTexture(GL_TEXTURE_2D, tex_red_specular);
 				}
-				if(tab == 1) // Y
-				{
+				if(tab == 1) { // y
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_2D, tex_green_diffuse);
 					glActiveTexture(GL_TEXTURE1);
 					glBindTexture(GL_TEXTURE_2D, tex_green_specular);
 				}
-				if(tab == 2) // Z
-				{
+				if(tab == 2) { // z
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_2D, tex_blue_diffuse);
 					glActiveTexture(GL_TEXTURE1);
 					glBindTexture(GL_TEXTURE_2D, tex_blue_specular);
 				}
 
-				model = glm::mat4();
+				glm::mat4 model = glm::mat4();
 				model = glm::scale(model, coord_scales[tab]);
 
 				lighting_shader.setMat4("model", model);
@@ -325,25 +322,23 @@ int main()
 		Box street(tex_street_diffuse, tex_street_specular);
 		street.scale = glm::vec3(3.0f, 0.001f, 7.0f);
 		street.render(lighting_shader, VAO_box);
-		/*model = glm::mat4();
-		model = glm::scale(model, glm::vec3(3.0f, 0.001f, 7.0f));
-		renderBox(model, tex_street_diffuse, tex_street_specular, lighting_shader);*/
 
 		//Right wall
-		model = glm::mat4();
-		model = glm::translate(model, glm::vec3(1.5f, 1.5f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.001f, 3.0f, 7.0f));
-		renderBox(model, tex_marble_diffuse, tex_marble_specular, lighting_shader);
+		Box rightWall(tex_marble_diffuse, tex_marble_specular);
+		rightWall.translate = glm::vec3(1.5f, 1.5f, 0.0f);
+		rightWall.scale = glm::vec3(0.001f, 3.0f, 7.0f);
+		rightWall.render(lighting_shader, VAO_box);
+
 
 		// Left wall
-		model = glm::mat4();
-		model = glm::translate(model, glm::vec3(-1.5f, 1.5f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.001f, 3.0f, 7.0f));
-		renderBox(model, tex_marble_diffuse, tex_marble_specular, lighting_shader);
-
+		Box leftWall(tex_marble_diffuse, tex_marble_specular);
+		leftWall.translate = glm::vec3(-1.5f, 1.5f, 0.0f);
+		leftWall.scale = glm::vec3(0.001f, 3.0f, 7.0f);
+		leftWall.render(lighting_shader, VAO_box);
 
 
 		//Table (4 tall boxes for legs & 1 thin box as table top)
+		/*
 		glm::vec3 table_scales[] = {
 			glm::vec3( 1.0f,  0.1f,  1.0f),	//top
 			glm::vec3( 0.1f,  0.5f,  0.1f),//near left
@@ -376,9 +371,34 @@ int main()
 			lighting_shader.setMat4("model", model);
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}*/
+
+		unsigned int diffuseTex, specularTex;
+		float buttonHeight;
+		if (BUTTON_PRESSED) {
+			diffuseTex = tex_red_bright_diffuse;
+			specularTex = tex_red_bright_specular;
+			buttonHeight = 0.51f;
+		} else {
+			diffuseTex = tex_red_dark_diffuse;
+			specularTex = tex_red_dark_specular;
+			buttonHeight = 0.53f;
 		}
 
+		Box button(diffuseTex, specularTex);
+		button.scale = glm::vec3(0.12f,  0.12f,  0.12f);
+		button.translate = glm::vec3(0.0f, buttonHeight, 0.0f);
+		button.render(lighting_shader, VAO_box);
 
+		Box buttonCase(tex_marble_diffuse, tex_marble_specular);
+		buttonCase.scale = glm::vec3(0.2f,  0.5f,  0.2f);
+		buttonCase.translate = glm::vec3(0.0f,  0.25f,  0.0f);
+		buttonCase.render(lighting_shader, VAO_box);
+
+		BUTTON_CLOSE_ENOUGH = glm::length(camera.Position - glm::vec3(0.0f, 0.56f, 0.25f)) <= 1.6f;
+
+
+		/*
 		//Button on table (1 big box & 1 small box as button)
 		glm::vec3 button_scales[] = {
 			glm::vec3( 0.2f,  0.12f,  0.2f),		//case
@@ -436,6 +456,7 @@ int main()
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
+		*/
 
 
 
@@ -506,24 +527,6 @@ int main()
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
-
-
-void renderBox(
-	glm::mat4 model, unsigned int diffuseTex, unsigned int specularTex,
-	Shader lighting_shader
-) {
-	glBindVertexArray(VAO_box);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, diffuseTex);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, specularTex);
-
-	lighting_shader.setMat4("model", model);
-
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-}
-
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------

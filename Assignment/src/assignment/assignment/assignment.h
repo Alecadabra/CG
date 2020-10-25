@@ -119,9 +119,15 @@ public:
 
 	glm::mat4 transform() {
 		glm::mat4 model = glm::mat4();
-		//model = glm::translate(model, translate);
-		//model = glm::rotate(model, glm::radians(angle), rotate);
+
+		model = glm::translate(model, translate);
+
+		if (this->angle != 0.0f) {
+			model = glm::rotate(model, glm::radians(angle), rotate);
+		}
+
 		model = glm::scale(model, scale);
+		
 		return model;
 	}
 
