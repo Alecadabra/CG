@@ -40,9 +40,7 @@ bool SHOW_COORDINATE = false;
 
 bool PERSPECTIVE_PROJECTION = true;
 
-// Vertex buffer/array objects
-unsigned int VBO_box, VAO_box;
-
+bool EXTRA_BRIGHT = false;
 
 //Animation Variables
 float curtin_rotate_y = 0.0;
@@ -50,15 +48,14 @@ float curtin_translate_y = 0.0;
 
 
 // Boxes
-Box street(&tex_street_diffuse, &tex_street_specular);
+Box floorBox(&tex_marble_diffuse, &tex_marble_specular);
 Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
 Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
 Box buttonBox(nullptr, nullptr);
-Box buttonCase(&tex_marble_diffuse, &tex_marble_specular);
 Box curtin(&tex_curtin_diffuse, &tex_curtin_specular);
 
-int main()
-{
+int main() {
+
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
@@ -109,7 +106,8 @@ int main()
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
-
+	// Vertex buffer/array objects
+	unsigned int VBO_box, VAO_box;
 	glGenVertexArrays(1, &VAO_box);
 	glGenBuffers(1, &VBO_box);
 
@@ -135,7 +133,6 @@ int main()
 	glEnableVertexAttribArray(2);
 
 
-
 	// second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
 	unsigned int VAO_light;
 	glGenVertexArrays(1, &VAO_light);
@@ -147,8 +144,6 @@ int main()
 		0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0
 	);
 	glEnableVertexAttribArray(0);
-
-
 
 
 
@@ -176,14 +171,25 @@ int main()
 	tex_blue_diffuse = loadTexture(FileSystem::getPath("resources/textures/blue.jpg").c_str());
 	tex_blue_specular = loadTexture(FileSystem::getPath("resources/textures/blue_specular.jpg").c_str());
 
-
-
 	
 	//shader configuration -----------------------------------------------------
 	lighting_shader.use();
 	lighting_shader.setInt("material.diffuse", 0);
 	lighting_shader.setInt("material.specular", 1);
 
+
+	// set static transformations ----------------------------------------------
+
+	// right wall
+	rightWall.translate = glm::vec3(1.5f, 1.5f, 0.0f);
+	rightWall.scale = glm::vec3(0.001f, 3.0f, 14.0f);
+
+	// left wall
+	leftWall.translate = glm::vec3(-1.5f, 1.5f, 0.0f);
+	leftWall.scale = glm::vec3(0.001f, 3.0f, 14.0f);
+
+	// floor
+	floorBox.scale = glm::vec3(3.0f, 0.001f, 14.0f);
 
 
 	// render loop
@@ -197,9 +203,7 @@ int main()
 		last_frame = currentFrame;
 
 		//update delay countdown
-		if (INPUT_DELAY > 0) {
-        	INPUT_DELAY -= 1;
-    	}
+		INPUT_DELAY = max(0, INPUT_DELAY - 1);
 
 		// input
 		// -----
@@ -217,7 +221,11 @@ int main()
         lighting_shader.setVec3("viewPos", camera.Position);
 
 		// light properties
-		lighting_shader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
+		if (EXTRA_BRIGHT) {
+			lighting_shader.setVec3("light.ambient", 0.6f, 0.6f, 0.6f);
+		} else {
+			lighting_shader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
+		}
 
 		lighting_shader.setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
 		lighting_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
@@ -256,17 +264,6 @@ int main()
 		// camera/view transformation
 		glm::mat4 view = camera.GetViewMatrix();
 		lighting_shader.setMat4("view", view);
-
-		//declare transformation matrix
-		//glm::mat4 model = glm::mat4();
-		/*
-		//example (remember, it is in column matrix position, so the order is reversed.)
-		model = glm::translate(model, glm::vec3(1.0f, 2.0f, 3.0f)); 			// translate by (1.0, 2.0, 3.0)
-		model = glm::scale(model, glm::vec3(2.0f, 5.0f, 3.0f)); 			// scale by (2.0, 5.0, 3.0) on X, Y, and Z respectively.
-		model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));	// rotate 45 degree about Y-axis (0,1,0)
-		*/
-
-
 
 
 		//Draw objects
@@ -314,20 +311,13 @@ int main()
 			}
 		}
 
-
-		//Street
-		street.scale = glm::vec3(3.0f, 0.001f, 7.0f);
-		street.render(lighting_shader, VAO_box);
+		// render static objects
+		floorBox.render(lighting_shader, VAO_box);
 
 		//Right wall
-		rightWall.translate = glm::vec3(1.5f, 1.5f, 0.0f);
-		rightWall.scale = glm::vec3(0.001f, 3.0f, 7.0f);
 		rightWall.render(lighting_shader, VAO_box);
 
-
 		// Left wall
-		leftWall.translate = glm::vec3(-1.5f, 1.5f, 0.0f);
-		leftWall.scale = glm::vec3(0.001f, 3.0f, 7.0f);
 		leftWall.render(lighting_shader, VAO_box);
 
 		// Button
@@ -348,11 +338,6 @@ int main()
 		buttonBox.translate = glm::vec3(0.0f, buttonHeight, 0.0f);
 		buttonBox.render(lighting_shader, VAO_box);
 
-		// Button case
-		buttonCase.scale = glm::vec3(0.2f,  0.5f,  0.2f);
-		buttonCase.translate = glm::vec3(0.0f,  0.25f,  0.0f);
-		buttonCase.render(lighting_shader, VAO_box);
-
 		BUTTON_CLOSE_ENOUGH = glm::length(camera.Position - glm::vec3(0.0f, 0.56f, 0.25f)) <= 1.6f;
 
 
@@ -362,6 +347,7 @@ int main()
 		curtin.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
 		curtin.scale = glm::vec3(0.2f, 0.2f, 0.001f);
 		curtin.render(lighting_shader, VAO_box);
+
 
 		//transformation for animation
 		if(BUTTON_PRESSED) {
@@ -410,8 +396,7 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void process_input(GLFWwindow *window)
-{
+void process_input(GLFWwindow *window) {
 	// Window closing
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
@@ -420,8 +405,8 @@ void process_input(GLFWwindow *window)
 	float minX, maxX, minZ, maxZ;
 	minX = leftWall.translate.x + (leftWall.scale.x / 2 + 0.2f);
 	maxX = rightWall.translate.x - (rightWall.scale.x / 2 + 0.2f);
-	minZ = -3.0f;
-	maxZ = 3.0f;
+	minZ = floorBox.translate.z + (floorBox.scale.z / 2 + 0.2f);
+	maxZ = floorBox.translate.z - (floorBox.scale.z / 2 + 0.2f);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         camera.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
@@ -453,20 +438,25 @@ void process_input(GLFWwindow *window)
 		INPUT_DELAY = INPUT_MAX;
 		PERSPECTIVE_PROJECTION = !PERSPECTIVE_PROJECTION;
 	}
+
+	// toggle extra brightness
+	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && INPUT_DELAY == 0) {
+		INPUT_DELAY = INPUT_MAX;
+		EXTRA_BRIGHT = !EXTRA_BRIGHT;
+	}
 }
 
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	// make sure the viewport matches the new window dimensions; note that width and 
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
 }
 
-unsigned int loadTexture(char const * path)
-{
+unsigned int loadTexture(char const * path) {
+
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 
@@ -505,10 +495,9 @@ unsigned int loadTexture(char const * path)
 
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    if (firstMouse)
-    {
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+
+    if (firstMouse) {
         lastX = xpos;
         lastY = ypos;
         firstMouse = false;
@@ -525,7 +514,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     camera.ProcessMouseScroll(yoffset);
 }

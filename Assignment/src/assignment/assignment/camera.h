@@ -7,6 +7,10 @@
 
 #include <vector>
 
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#define med(a, b, c) max(min((a), (b)), min(max((a), (b)), (c)))
+
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
 enum Camera_Movement {
     FORWARD,
@@ -90,37 +94,15 @@ public:
                 Position += Right * velocity;
                 break;
         }
-
-        if (Position.x < minX) {
-            Position.x = minX;
-        }
-        if (Position.x > maxX) {
-            Position.x = maxX;
-        }
-        if (Position.z < minZ) {
-            Position.z = minZ;
-        }
-        if (Position.z > maxZ) {
-            Position.z = maxZ;
-        }
-
-        //if (Position.z <= -4.0f) Position.z = -4.0f;
-        /*
-        if (direction == FORWARD)
-            Position += Front * velocity;
-        if (direction == BACKWARD)
-            Position -= Front * velocity;
-        if (direction == LEFT)
-            Position -= Right * velocity;
-        if (direction == RIGHT)
-            Position += Right * velocity; */
+        Position.x = med(minX, maxX, Position.x);
+        Position.z = med(minZ, maxZ, Position.z);
 
         // Ensure user stays at y = 0
         Position.y = cam_height;
     }
 
     // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-    void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true)
+    void ProcessMouseMovement(float xoffset, float yoffset)
     {
         xoffset *= MouseSensitivity;
         yoffset *= MouseSensitivity;
@@ -128,15 +110,7 @@ public:
         Yaw   += xoffset;
         Pitch += yoffset;
 
-        // Make sure that when pitch is out of bounds, screen doesn't get flipped
-        if (constrainPitch) {
-            if (Pitch > 89.0f) {
-                Pitch = 89.0f;
-            }
-            if (Pitch < -89.0f) {
-                Pitch = -89.0f;
-            }
-        }
+        Pitch = med(-89.0f, 89.0f, Pitch);
 
         // Update Front, Right and Up Vectors using the updated Euler angles
         updateCameraVectors();
@@ -145,15 +119,8 @@ public:
     // Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
     void ProcessMouseScroll(float yoffset)
     {
-        if (Zoom >= 1.0f && Zoom <= 45.0f) {
-            Zoom -= yoffset;
-        }
-        if (Zoom <= 1.0f) {
-            Zoom = 1.0f;
-        }
-        if (Zoom >= 45.0f) {
-            Zoom = 45.0f;
-        }
+        Zoom -= yoffset;
+        Zoom = med(45.0f, 100.0f, Zoom);
     }
 
 private:
