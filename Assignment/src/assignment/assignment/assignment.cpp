@@ -461,30 +461,37 @@ int main()
 
 
 		//Curtin Logo
-		glBindVertexArray(VAO_box);
+		Box curtin(tex_curtin_diffuse, tex_curtin_specular);
+		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
+		curtin.angle = curtin_rotate_y;
+		curtin.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
+		curtin.scale = glm::vec3(0.2f, 0.2f, 0.001f);
+		curtin.render(lighting_shader, VAO_box);
+
+
+		/*glBindVertexArray(VAO_box);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex_curtin_diffuse);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_curtin_specular);
+		glBindTexture(GL_TEXTURE_2D, tex_curtin_specular);*/
 
 		//transformation for animation
-		if(BUTTON_PRESSED == true)
-		{
+		if(BUTTON_PRESSED) {
 			curtin_translate_y += 1.0f;
 			curtin_rotate_y += 1.0f;
 			if(abs(curtin_translate_y - 360.0f) <= 0.1f) curtin_translate_y = 0.0f;
 			if(abs(curtin_rotate_y - 360.0f) <= 0.1f) curtin_rotate_y = 0.0f;
 		}
 
-		model = glm::mat4();
+		/*glm::mat4 model = glm::mat4();
 		model = glm::translate(model, glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f));
 		model = glm::rotate(model, glm::radians(curtin_rotate_y), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.001f));
 
 		lighting_shader.setMat4("model", model);
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, 36);*/
 
 
 
@@ -492,14 +499,14 @@ int main()
 		lamp_shader.use();
 		lamp_shader.setMat4("projection", projection);
 		lamp_shader.setMat4("view", view);
-		model = glm::mat4();
+		glm::mat4 model = glm::mat4();
 		model = glm::translate(model, light_pos);
 		model = glm::scale(model, glm::vec3(0.01f)); // a smaller cube
 		lamp_shader.setMat4("model", model);
 
-		
+		lamp_shader.setFloat("intensity", 1.0); /*
 		if(BUTTON_PRESSED == true) lamp_shader.setFloat("intensity", 1.0);
-		else lamp_shader.setFloat("intensity", 0.3);
+		else lamp_shader.setFloat("intensity", 0.3); */
 
 		glBindVertexArray(VAO_light);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
