@@ -1,5 +1,12 @@
 #include "assignment.h"
 
+// textures
+unsigned int tex_wood_diffuse, tex_street_diffuse, tex_grass_diffuse, tex_marble_diffuse, tex_curtin_diffuse;
+unsigned int tex_wood_specular, tex_street_specular, tex_grass_specular, tex_marble_specular, tex_curtin_specular;
+
+unsigned int tex_red_dark_diffuse, tex_red_bright_diffuse, tex_red_diffuse, tex_green_diffuse, tex_blue_diffuse;
+unsigned int tex_red_dark_specular, tex_red_bright_specular, tex_red_specular, tex_green_specular, tex_blue_specular;
+
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -41,20 +48,21 @@ unsigned int VBO_box, VAO_box;
 float curtin_rotate_y = 0.0;
 float curtin_translate_y = 0.0;
 
-// Countdown until the button trigger can be pressed again.
-// This prevents accidental burst repeat clicking of the key.
-void update_delay()
-{
-	if (INPUT_DELAY > 0) {
-		INPUT_DELAY -= 1;
-	}
-}
+
+// Boxes
+Box street(&tex_street_diffuse, &tex_street_specular);
+Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
+Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
+Box buttonBox(nullptr, nullptr);
+Box buttonCase(&tex_marble_diffuse, &tex_marble_specular);
+Box curtin(&tex_curtin_diffuse, &tex_curtin_specular);
+
 
 // Toggle button pressing only if the camera is close enough.
-void toggle_button_distance(glm::vec3 button_pos)
+/*void toggle_button_distance(glm::vec3 button_pos)
 {
 	BUTTON_CLOSE_ENOUGH = glm::length(camera.Position - button_pos) <= 1.6f;
-}
+}*/
 
 int main()
 {
@@ -151,14 +159,8 @@ int main()
 
 
 
-	// load and create a texture 
+	// load and create textures
 	// -------------------------
-	unsigned int tex_wood_diffuse, tex_street_diffuse, tex_grass_diffuse, tex_marble_diffuse, tex_curtin_diffuse;
-	unsigned int tex_wood_specular, tex_street_specular, tex_grass_specular, tex_marble_specular, tex_curtin_specular;
-
-	unsigned int tex_red_dark_diffuse, tex_red_bright_diffuse, tex_red_diffuse, tex_green_diffuse, tex_blue_diffuse;
-	unsigned int tex_red_dark_specular, tex_red_bright_specular, tex_red_specular, tex_green_specular, tex_blue_specular;
-
 	tex_wood_diffuse = loadTexture(FileSystem::getPath("resources/textures/wood2.jpg").c_str());
 	tex_wood_specular = loadTexture(FileSystem::getPath("resources/textures/wood2_specular.jpg").c_str());
 	tex_street_diffuse = loadTexture(FileSystem::getPath("resources/textures/street.png").c_str());
@@ -202,7 +204,9 @@ int main()
 		last_frame = currentFrame;
 
 		//update delay countdown
-		update_delay();
+		if (INPUT_DELAY > 0) {
+        	INPUT_DELAY -= 1;
+    	}
 
 		// input
 		// -----
@@ -319,19 +323,16 @@ int main()
 
 
 		//Street
-		Box street(tex_street_diffuse, tex_street_specular);
 		street.scale = glm::vec3(3.0f, 0.001f, 7.0f);
 		street.render(lighting_shader, VAO_box);
 
 		//Right wall
-		Box rightWall(tex_marble_diffuse, tex_marble_specular);
 		rightWall.translate = glm::vec3(1.5f, 1.5f, 0.0f);
 		rightWall.scale = glm::vec3(0.001f, 3.0f, 7.0f);
 		rightWall.render(lighting_shader, VAO_box);
 
 
 		// Left wall
-		Box leftWall(tex_marble_diffuse, tex_marble_specular);
 		leftWall.translate = glm::vec3(-1.5f, 1.5f, 0.0f);
 		leftWall.scale = glm::vec3(0.001f, 3.0f, 7.0f);
 		leftWall.render(lighting_shader, VAO_box);
@@ -385,12 +386,14 @@ int main()
 			buttonHeight = 0.53f;
 		}
 
-		Box button(diffuseTex, specularTex);
-		button.scale = glm::vec3(0.12f,  0.12f,  0.12f);
-		button.translate = glm::vec3(0.0f, buttonHeight, 0.0f);
-		button.render(lighting_shader, VAO_box);
+		// Button
+		buttonBox.diffuseTex = &diffuseTex;
+		buttonBox.specularTex = &specularTex;
+		buttonBox.scale = glm::vec3(0.12f,  0.12f,  0.12f);
+		buttonBox.translate = glm::vec3(0.0f, buttonHeight, 0.0f);
+		buttonBox.render(lighting_shader, VAO_box);
 
-		Box buttonCase(tex_marble_diffuse, tex_marble_specular);
+		// Button case
 		buttonCase.scale = glm::vec3(0.2f,  0.5f,  0.2f);
 		buttonCase.translate = glm::vec3(0.0f,  0.25f,  0.0f);
 		buttonCase.render(lighting_shader, VAO_box);
@@ -461,7 +464,6 @@ int main()
 
 
 		//Curtin Logo
-		Box curtin(tex_curtin_diffuse, tex_curtin_specular);
 		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
 		curtin.angle = curtin_rotate_y;
 		curtin.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -544,18 +546,23 @@ void process_input(GLFWwindow *window)
 		glfwSetWindowShouldClose(window, true);
 	}
 
+	float minX, maxX, minZ, maxZ;
+	minX = leftWall.translate.x + (leftWall.scale.x / 2 + 0.2f);
+	maxX = rightWall.translate.x - (rightWall.scale.x / 2 + 0.2f);
+	minZ = -3.0f;
+	maxZ = 3.0f;
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera.ProcessKeyboard(FORWARD, delta_time);
+        camera.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
 	}
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera.ProcessKeyboard(BACKWARD, delta_time);
+        camera.ProcessKeyboard(BACKWARD, delta_time, minX, maxX, minZ, maxZ);
 	}
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        camera.ProcessKeyboard(LEFT, delta_time);
+        camera.ProcessKeyboard(LEFT, delta_time, minX, maxX, minZ, maxZ);
 	}
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        camera.ProcessKeyboard(RIGHT, delta_time);
+        camera.ProcessKeyboard(RIGHT, delta_time, minX, maxX, minZ, maxZ);
 	}
 
 	//toggle red button

@@ -78,8 +78,8 @@ unsigned int loadTexture(char const * path);
 class Box {
 public:
 
-	unsigned int diffuseTex;
-	unsigned int specularTex;
+	unsigned int* diffuseTex;
+	unsigned int* specularTex;
 
 	glm::vec3 scale;
 	glm::vec3 rotate;
@@ -88,7 +88,8 @@ public:
 	float angle;
 
 	Box(
-		unsigned int diffuseTex, unsigned int specularTex,
+		unsigned int* diffuseTex = nullptr,
+		unsigned int* specularTex = nullptr,
 		float angle = 0.0f,
 		glm::vec3 scale = glm::vec3(),
 		glm::vec3 rotate = glm::vec3(),
@@ -112,9 +113,9 @@ public:
 
 	void activateTextures() {
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, diffuseTex);
+		glBindTexture(GL_TEXTURE_2D, *diffuseTex);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, specularTex);
+		glBindTexture(GL_TEXTURE_2D, *specularTex);
 	}
 
 	glm::mat4 transform() {
