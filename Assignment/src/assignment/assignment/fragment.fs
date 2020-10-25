@@ -23,12 +23,14 @@ uniform vec3 viewPos;
 uniform Material material;
 uniform Light light;
 
+uniform float radius;
+
 void main()
 {
     // distance attribute
     float dist = distance(light.position, FragPos);
-    float att = min(1.0, 1.0 / (
-        1.0 + (1.0 * dist) + (1.0 * dist * dist) + (1.0 * dist * dist * dist)
+    float att = min(1.0, radius / (
+        1.0 + dist + (dist * dist)
     ));
 
     // ambient

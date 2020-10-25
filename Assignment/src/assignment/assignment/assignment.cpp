@@ -30,7 +30,9 @@ float delta_time = 0.0f;	// time between current frame and last frame
 float last_frame = 0.0f;
 
 int INPUT_DELAY = 0;
-int INPUT_MAX = 30;
+int INPUT_MAX = 20;
+
+float light_radius = 1.0f;
 
 //Toggle (Animation or states)
 bool BUTTON_PRESSED = false;
@@ -227,8 +229,9 @@ int main() {
 			lighting_shader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
 		}
 
-		lighting_shader.setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
-		lighting_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+		float brightness = abs(sin(glfwGetTime()) + 0.5f) + 0.8f;
+		lighting_shader.setVec3("light.diffuse", brightness * 0.8f, brightness * 0.8f, brightness * 0.8f);
+		lighting_shader.setVec3("light.specular", brightness * 1.0f, brightness * 1.0f, brightness * 1.0f);
 
 		/*if(BUTTON_PRESSED == true)
 		{
@@ -243,7 +246,7 @@ int main() {
 
 		// material properties
         lighting_shader.setFloat("material.shininess", 65.0f);
-		// for now just set the same for every object. But, you can make it dynamic for various objects.
+		lighting_shader.setFloat("radius", light_radius);
 
 		// pass projection matrix to shader
 		glm::mat4 projection;
@@ -443,6 +446,16 @@ void process_input(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && INPUT_DELAY == 0) {
 		INPUT_DELAY = INPUT_MAX;
 		EXTRA_BRIGHT = !EXTRA_BRIGHT;
+	}
+
+	// increase light brightness radius
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+		light_radius = min(2.0f, light_radius + delta_time * 2.0f);
+	}
+
+	// decrease light brightness radius
+	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
+		light_radius = max(0.0f, light_radius - delta_time * 2.0f);
 	}
 }
 
