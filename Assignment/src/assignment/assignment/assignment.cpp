@@ -4,8 +4,13 @@
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+const float NEAR_CLIP = 0.1f;
+const float FAR_CLIP = 300.0f;
+
+const float cam_height = 0.8f;
+
 // camera
-Camera camera(glm::vec3(0.0f, 0.5f, 3.0f));
+Camera camera(glm::vec3(0.0f, cam_height, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -18,6 +23,7 @@ float delta_time = 0.0f;	// time between current frame and last frame
 float last_frame = 0.0f;
 
 int INPUT_DELAY = 0;
+int INPUT_MAX = 30;
 
 //Toggle (Animation or states)
 bool BUTTON_PRESSED = false;
@@ -26,6 +32,9 @@ bool BUTTON_CLOSE_ENOUGH = false;
 bool SHOW_COORDINATE = false;
 
 bool PERSPECTIVE_PROJECTION = true;
+
+// Vertex buffer/array objects
+unsigned int VBO_box, VAO_box;
 
 
 //Animation Variables
@@ -99,8 +108,6 @@ int main()
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
-
-	unsigned int VBO_box, VAO_box;
 
 	glGenVertexArrays(1, &VAO_box);
 	glGenBuffers(1, &VBO_box);
@@ -236,12 +243,12 @@ int main()
 			projection = glm::perspective(
 				glm::radians(camera.Zoom),
 				(float)SCR_WIDTH / (float)SCR_HEIGHT,
-				0.1f, 300.0f // Clipping planes
+				NEAR_CLIP, FAR_CLIP
 			);
 		} else {
 			projection = glm::ortho(
-				0.0f, 1.0f/*(float)SCR_WIDTH*/, 0.0f, 1.0f/*(float)SCR_HEIGHT / 2*/,
-				0.1f, 300.0f // Clipping planes
+				-1.0f, 1.0f, -1.0f, 1.0f,
+				NEAR_CLIP, FAR_CLIP
 			);
 		}
 		lighting_shader.setMat4("projection", projection);
@@ -315,36 +322,22 @@ int main()
 
 
 		//Street
-		glBindVertexArray(VAO_box);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex_street_diffuse);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_street_specular);
-
 		model = glm::mat4();
 		model = glm::scale(model, glm::vec3(3.0f, 0.001f, 7.0f));
-
-		lighting_shader.setMat4("model", model);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
+		renderBox(model, tex_street_diffuse, tex_street_specular, lighting_shader);
 
 		//Right wall
-		glBindVertexArray(VAO_box);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex_marble_diffuse);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_marble_specular);
-
 		model = glm::mat4();
 		model = glm::translate(model, glm::vec3(1.5f, 1.5f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.001f, 3.0f, 7.0f));
+		renderBox(model, tex_marble_diffuse, tex_marble_specular, lighting_shader);
 
-		lighting_shader.setMat4("model", model);
+		// Left wall
+		model = glm::mat4();
+		model = glm::translate(model, glm::vec3(-1.5f, 1.5f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.001f, 3.0f, 7.0f));
+		renderBox(model, tex_marble_diffuse, tex_marble_specular, lighting_shader);
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
 		//Table (4 tall boxes for legs & 1 thin box as table top)
@@ -398,7 +391,7 @@ int main()
 		};
 
 		glm::vec3 button_final_location = glm::vec3(0.0f, 0.56f, 0.25f);
-		toggle_button_distance(button_final_location); 
+		toggle_button_distance(button_final_location);
 
 		glBindVertexArray(VAO_box);
 		
@@ -512,6 +505,22 @@ int main()
 }
 
 
+void renderBox(
+	glm::mat4 model, unsigned int diffuseTex, unsigned int specularTex,
+	Shader lighting_shader
+) {
+	glBindVertexArray(VAO_box);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, diffuseTex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, specularTex);
+
+	lighting_shader.setMat4("model", model);
+
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+}
+
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
@@ -538,19 +547,19 @@ void process_input(GLFWwindow *window)
 
 	//toggle red button
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && INPUT_DELAY == 0 && BUTTON_CLOSE_ENOUGH == true) {
-		INPUT_DELAY = 20;
+		INPUT_DELAY = INPUT_MAX;
 		BUTTON_PRESSED = !BUTTON_PRESSED;
 	}
 
 	//toggle coordinate visibility
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && INPUT_DELAY == 0) {
-		INPUT_DELAY = 20;
+		INPUT_DELAY = INPUT_MAX;
 		SHOW_COORDINATE = !SHOW_COORDINATE;
 	}
 
 	// toggle projection mode
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && INPUT_DELAY == 0) {
-		INPUT_DELAY = 20;
+		INPUT_DELAY = INPUT_MAX;
 		PERSPECTIVE_PROJECTION = !PERSPECTIVE_PROJECTION;
 	}
 }

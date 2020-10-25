@@ -10,7 +10,7 @@
 
 #include <learnopengl/filesystem.h>
 #include <learnopengl/shader_m.h>
-#include <learnopengl/camera.h>
+#include "camera.h"
 
 #include <iostream>
 #include <string>
@@ -65,7 +65,10 @@ float box[] = {
 	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 };
 
-
+void renderBox(
+	glm::mat4 model, unsigned int diffuseTex, unsigned int specularTex,
+	Shader lighting_shader
+);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
