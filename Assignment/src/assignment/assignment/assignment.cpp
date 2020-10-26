@@ -69,6 +69,7 @@ Box button2_wood(&tex_wood_diffuse, &tex_wood_specular);
 // Door boxes
 Box woodDoor(&tex_wood_diffuse, &tex_wood_specular);
 Box brickDoor(&tex_brickwall_diffuse, &tex_brickwall_specular);
+Box marbleDoor(&tex_marble2_diffuse, &tex_marble2_specular);
 
 // Which door is next
 enum DoorStage {
@@ -80,13 +81,13 @@ enum DoorStage {
 DoorStage doorStage = WOOD;
 
 Box* doorBoxes[] = {
-	&woodDoor, &brickDoor
+	&woodDoor, &brickDoor, &marbleDoor
 };
-int doorBoxesLen = 2;
+int doorBoxesLen = 3;
 
 // Door animations
 float doorAnim[] = {
-	0.0f, 0.0f
+	0.0f, 0.0f, 0.0f
 };
 
 void doorAnimationStep(DoorStage stage);
@@ -230,33 +231,37 @@ int main() {
 	// set static transformations ----------------------------------------------
 
 	// right wall
-	rightWall.translate = glm::vec3(1.5f, 1.5f, -3.0f);
-	rightWall.scale = glm::vec3(0.001f, 3.0f, 18.0f);
+	rightWall.translate = glm::vec3(1.5f, 1.5f, -8.0f);
+	rightWall.scale = glm::vec3(0.001f, 3.0f, 30.0f);
 
 	// left wall
-	leftWall.translate = glm::vec3(-1.5f, 1.5f, -3.0f);
-	leftWall.scale = glm::vec3(0.001f, 3.0f, 18.0f);
+	leftWall.translate = glm::vec3(-1.5f, 1.5f, -8.0f);
+	leftWall.scale = glm::vec3(0.001f, 3.0f, 30.0f);
 
 	// floor
-	floorBox.translate = glm::vec3(0.0f, 0.0f, -3.0f);
-	floorBox.scale = glm::vec3(3.0f, 0.001f, 18.0f);
+	floorBox.translate = glm::vec3(0.0f, 0.0f, -8.0f);
+	floorBox.scale = glm::vec3(3.0f, 0.001f, 30.0f);
 
 	// roof
-	roofBox.translate = glm::vec3(0.0f, 3.0f, -3.0f);
-	roofBox.scale = glm::vec3(3.0f, 0.001f, 18.0f);
+	roofBox.translate = glm::vec3(0.0f, 3.0f, -8.0f);
+	roofBox.scale = glm::vec3(3.0f, 0.001f, 30.0f);
 
 	// doors
-	woodDoor.scale = glm::vec3(3.0f, 3.0f, 1.0f);
+	float doorZScale = 0.8f;
+	woodDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 
-	brickDoor.scale = glm::vec3(3.0f, 3.0f, 1.0f);
+	brickDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 	brickDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
 
+	marbleDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
+
 	// buttons
-	button1Box.scale = glm::vec3(0.12f,  0.12f,  0.12f);
+	float buttonDimenScale = 0.12f;
+	button1Box.scale = glm::vec3(buttonDimenScale);
 	
-	button2_brick.scale = glm::vec3(0.12f,  0.12f,  0.12f);
-	button2_metal.scale = glm::vec3(0.12f,  0.12f,  0.12f);
-	button2_wood.scale = glm::vec3(0.12f,  0.12f,  0.12f);
+	button2_brick.scale = glm::vec3(buttonDimenScale);
+	button2_metal.scale = glm::vec3(buttonDimenScale);
+	button2_wood.scale = glm::vec3(buttonDimenScale);
 
 
 	// render loop
@@ -432,13 +437,20 @@ int main() {
 		// Brick door
 		{
 			float anim = doorAnim[DoorStage::BRICK];
-			float x = brickDoor.scale.x * anim * anim;
+			float x = (brickDoor.scale.x - 0.3f) * anim * anim;
 			float y = brickDoor.scale.y / 2 + sin(glm::radians(anim * 180.0f));
 			brickDoor.translate = glm::vec3(x, y, -10.0f);
 			brickDoor.angle = anim * -90.0f;
 		}
 		doorAnimationStep(BRICK);
 		brickDoor.render(lighting_shader, VAO_box);
+
+		// Marble door
+		{
+			marbleDoor.translate = glm::vec3(0, marbleDoor.scale.y / 2, -15.0f);
+		}
+		doorAnimationStep(MARBLE);
+		marbleDoor.render(lighting_shader, VAO_box);
 
 		/* Curtin Logo
 		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
@@ -603,6 +615,19 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ) {
 			if (camera.Position.z < wallMin.z && camera.Position.y > wallMin.y) {
 				// Try to walk through from -ve z side
 				maxZ = min(maxZ, wallMin.z - hitbox_pad);
+			}
+		}
+
+		if (wallMin.z < camera.Position.z && camera.Position.z < wallMax.z) {
+			// Player has a wall to their left/right (z axis)
+
+			if (camera.Position.x > wallMax.x && camera.Position.y > wallMin.y) {
+				// Try to walk through from +ve z side
+				minX = max(minX, wallMax.x + hitbox_pad);
+			}
+			if (camera.Position.z < wallMin.x && camera.Position.y > wallMin.y) {
+				// Try to walk through from -ve z side
+				maxX = min(maxX, wallMin.x - hitbox_pad);
 			}
 		}
 	}
