@@ -10,9 +10,11 @@ unsigned int tex_red_dark_specular, tex_red_bright_specular, tex_red_specular, t
 unsigned int tex_marble2_graffiti_diffuse, tex_graffiti_2_diffuse, tex_graffiti_3_diffuse, tex_graffiti_4_diffuse;
 unsigned int tex_marble2_graffiti_specular, tex_graffiti_2_specular, tex_graffiti_3_specular, tex_graffiti_4_specular;
 
+unsigned int tex_night_sky;
+
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
 
 const float NEAR_CLIP = 0.1f;
 const float FAR_CLIP = 300.0f;
@@ -29,7 +31,7 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 // timing
-float delta_time = 0.0f;	// time between current frame and last frame
+float delta_time = 0.0f; // time between current frame and last frame
 float last_frame = 0.0f;
 
 int INPUT_DELAY = 0;
@@ -44,19 +46,16 @@ glm::vec3 light_pos = light_initial_pos;
 bool buttonPressed[] = {
 	false,
 	false,
+	false,
 	false
 };
-int buttonPressedLen = 3;
+int buttonPressedLen = 4;
 
 bool SHOW_COORDINATE = false;
 
 bool PERSPECTIVE_PROJECTION = true;
 
 bool EXTRA_BRIGHT = false;
-
-//Animation Variables
-float curtin_rotate_y = 0.0;
-float curtin_translate_y = 0.0;
 
 // Boxes
 Box floorBox(&tex_marble_diffuse, &tex_marble_specular);
@@ -72,6 +71,9 @@ Box button2_wood(&tex_wood_diffuse, &tex_wood_specular);
 Box button3_2(&tex_graffiti_2_diffuse, &tex_graffiti_2_specular);
 Box button3_3(&tex_graffiti_3_diffuse, &tex_graffiti_3_specular);
 Box button3_4(&tex_graffiti_4_diffuse, &tex_graffiti_4_specular);
+Box button4_1(&tex_grass_diffuse, &tex_grass_specular);
+Box button4_2(&tex_curtin_diffuse, &tex_curtin_specular);
+Box button4_3(&tex_street_diffuse, &tex_street_specular);
 
 
 // Door boxes
@@ -113,7 +115,6 @@ void process_input(GLFWwindow *window);
 unsigned int loadTexture(char const * path);
 
 int main() {
-
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
@@ -213,12 +214,12 @@ int main() {
 	tex_brickwall_specular = loadTexture(FileSystem::getPath("resources/textures/brickwall_specular.jpg").c_str());
 	tex_metal_diffuse = loadTexture(FileSystem::getPath("resources/textures/metal.png").c_str());
 	tex_metal_specular = loadTexture(FileSystem::getPath("resources/textures/metal_specular.png").c_str());
-	tex_marble2_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble2.jpg").c_str());
-	tex_marble2_specular = loadTexture(FileSystem::getPath("resources/textures/marble2_specular.jpg").c_str());
-	//tex_street_diffuse = loadTexture(FileSystem::getPath("resources/textures/street.png").c_str());
-	//tex_street_specular = loadTexture(FileSystem::getPath("resources/textures/street_specular.png").c_str());
-	//tex_grass_diffuse = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
-	//tex_grass_specular = loadTexture(FileSystem::getPath("resources/textures/grass_specular.jpg").c_str());
+	//tex_marble2_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble2.jpg").c_str());
+	//tex_marble2_specular = loadTexture(FileSystem::getPath("resources/textures/marble2_specular.jpg").c_str());
+	tex_street_diffuse = loadTexture(FileSystem::getPath("resources/textures/street.png").c_str());
+	tex_street_specular = loadTexture(FileSystem::getPath("resources/textures/street_specular.png").c_str());
+	tex_grass_diffuse = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
+	tex_grass_specular = loadTexture(FileSystem::getPath("resources/textures/grass_specular.jpg").c_str());
 	tex_marble_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
 	tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble_specular.jpg").c_str());
 	tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
@@ -241,6 +242,7 @@ int main() {
 	tex_graffiti_3_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_3_specular.jpg").c_str());
 	tex_graffiti_4_diffuse = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_diffuse.jpg").c_str());
 	tex_graffiti_4_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_specular.jpg").c_str());
+	//tex_night_sky = loadTexture(FileSystem::getPath("resources/textures/night_sky").c_str());
 
 	
 	//shader configuration -----------------------------------------------------
@@ -317,6 +319,15 @@ int main() {
 
 	{
 		Box* buttons[] = { &button3_2, &button3_3, &button3_4 };
+		for (int i = 0; i < 3; i++) {
+			buttons[i]->scale = glm::vec3(buttonDimenScale);
+			buttons[i]->angle = 90.0f;
+			buttons[i]->rotate = glm::vec3(1.0f, 0.0f, 0.0f);
+		}
+	}
+
+	{
+		Box* buttons[] = { &button4_1, &button4_2, &button4_3 };
 		for (int i = 0; i < 3; i++) {
 			buttons[i]->scale = glm::vec3(buttonDimenScale);
 			buttons[i]->angle = 90.0f;
@@ -454,6 +465,8 @@ int main() {
 		rightWall.render(lighting_shader, VAO_box);
 		leftWall.render(lighting_shader, VAO_box);
 
+		// buttons -------------------------------------------------------------
+
 		// Button 1 (wood door)
 		{
 			unsigned int diffuseTex, specularTex;
@@ -521,6 +534,26 @@ int main() {
 			}
 		}
 
+		// Button 4's (metal door)
+		{
+			Box* button4s[] = { &button4_1, &button4_2, &button4_3 };
+			float buttonXOffset;
+			if (buttonPressed[METAL]) {
+				buttonXOffset = 0.008f;
+			} else {
+				buttonXOffset = 0.02f;
+			}
+			float x = rightWall.getNegativeBounds().x - 0.02f;
+			float y = camera.Position.y - 0.2f;
+			float z = metalDoorBot.getPositiveBounds().z + 0.5f;
+			for (int i = 0; i < 3; i++) {
+				button4s[i]->translate = glm::vec3(x - buttonXOffset, y, z + i * 0.7f);
+				button4s[i]->render(lighting_shader, VAO_box);
+			}
+		}
+
+
+		// doors ---------------------------------------------------------------
 
 		// Wood door
 		{
@@ -561,7 +594,7 @@ int main() {
 				float localAnim = (anim - 0.6f) / 3.0f * 10.0f;
 				marbleDoor.angle = localAnim * 720.0f;
 				marbleDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
-				marbleDoor.translate.z = initialTranslate.z + initialTranslate.z * 4 * sin(glm::radians(localAnim * 45.0f));
+				marbleDoor.translate.z = initialTranslate.z + initialTranslate.z * 1.5f * sin(glm::radians(localAnim * 45.0f));
 			}
 		}
 		doorAnimationStep(MARBLE);
@@ -570,9 +603,27 @@ int main() {
 
 		// Metal door
 		{
+			float anim = doorAnim[DoorStage::METAL];
+			if (anim < 0.4f) {
+				float localAnim = anim / 4.0f * 10.0f;
+				metalDoorLeft.translate.y = 1.5f - 3.0f * sin(glm::radians(localAnim * 90.0f));
+				metalDoorRight.translate.y = 1.5f + 3.0f * sin(glm::radians(localAnim * 90.0f));
+			} else {
+				float localAnim = (anim - 0.4f) / 6.0f * 10.0f;
+				metalDoorBot.translate.x = -3.6f * sin(glm::radians(localAnim * 90.0f));
+				metalDoorTop.translate.x = 3.6f * sin(glm::radians(localAnim * 90.0f));
+			}
+
+			if (anim == 1.0f) {
+				// Move things that should not be visible out
+				metalDoorBot.translate.y = 5.0f;
+				metalDoorLeft.translate.x = -5.0f;
+				metalDoorRight.translate.x = 5.0f;
+			}
+
 			doorAnimationStep(METAL);
 			Box* metalDoors[] = {
-			&metalDoorBot, &metalDoorTop, &metalDoorLeft, &metalDoorRight
+				&metalDoorBot, &metalDoorTop, &metalDoorLeft, &metalDoorRight
 			};
 			for (int i = 0; i < 4; i++) {
 				metalDoors[i]->render(lighting_shader, VAO_box);
@@ -675,6 +726,10 @@ void process_input(GLFWwindow *window) {
         camera.ProcessKeyboard(RIGHT, delta_time, minX, maxX, minZ, maxZ);
 	}
 
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+		camera.MovementSpeed = SPEED * 1.4f;
+	}
+
 	// Buttons
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && INPUT_DELAY == 0) {
 		if (checkButtonRange(button1Box)) {
@@ -718,6 +773,16 @@ void process_input(GLFWwindow *window) {
 			INPUT_DELAY = INPUT_MAX;
 			button3_4.diffuseTex = &tex_red_dark_diffuse;
 			button3_4.specularTex = &tex_red_dark_specular;
+		} else if (
+			checkButtonRange(button4_1) || checkButtonRange(button4_2)
+			|| checkButtonRange(button4_3)
+		) {
+			// toggle button 4's (all of them) (metal door)
+			INPUT_DELAY = INPUT_MAX;
+			buttonPressed[METAL] = true;
+			if (doorStage == METAL) {
+				doorStage = FINISH;
+			}
 		}
 	}
 
