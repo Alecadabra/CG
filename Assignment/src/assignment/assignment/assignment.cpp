@@ -17,6 +17,7 @@ const float FAR_CLIP = 300.0f;
 const float cam_height = 0.8f;
 
 const float hitbox_pad = 0.25f;
+const float button_range = 0.8f;
 
 // camera
 Camera camera(glm::vec3(0.0f, cam_height, 3.0f));
@@ -37,8 +38,11 @@ int INPUT_MAX = 20;
 float light_radius = 1.2f;
 
 //Toggle (Animation or states)
-bool BUTTON_PRESSED = false;
-bool BUTTON_CLOSE_ENOUGH = false;
+bool buttonPressed[] = {
+	false,
+	false
+};
+int buttonPressedLen = 2;
 
 bool SHOW_COORDINATE = false;
 
@@ -55,15 +59,25 @@ Box floorBox(&tex_marble_diffuse, &tex_marble_specular);
 Box roofBox(&tex_marble_diffuse, &tex_marble_specular);
 Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
 Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
-Box buttonBox(nullptr, nullptr);
-Box curtin(&tex_curtin_diffuse, &tex_curtin_specular);
 
-// Which door is next
-DoorStage doorStage = WOOD;
+// Button boxes
+Box button1Box(nullptr, nullptr);
+Box button2_brick(&tex_brickwall_diffuse, &tex_brickwall_specular);
+Box button2_metal(&tex_metal_diffuse, &tex_metal_specular);
+Box button2_wood(&tex_wood_diffuse, &tex_wood_specular);
 
 // Door boxes
 Box woodDoor(&tex_wood_diffuse, &tex_wood_specular);
 Box brickDoor(&tex_brickwall_diffuse, &tex_brickwall_specular);
+
+// Which door is next
+enum DoorStage {
+	WOOD = 0,
+	BRICK = 1,
+	MARBLE = 2,
+	METAL = 3
+};
+DoorStage doorStage = WOOD;
 
 Box* doorBoxes[] = {
 	&woodDoor, &brickDoor
@@ -74,6 +88,15 @@ int doorBoxesLen = 2;
 float doorAnim[] = {
 	0.0f, 0.0f
 };
+
+void doorAnimationStep(DoorStage stage);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void computeBounds(float&, float&, float&, float&);
+bool checkButtonRange(Box);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void process_input(GLFWwindow *window);
+unsigned int loadTexture(char const * path);
 
 int main() {
 
@@ -228,6 +251,13 @@ int main() {
 	brickDoor.scale = glm::vec3(3.0f, 3.0f, 1.0f);
 	brickDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
 
+	// buttons
+	button1Box.scale = glm::vec3(0.12f,  0.12f,  0.12f);
+	
+	button2_brick.scale = glm::vec3(0.12f,  0.12f,  0.12f);
+	button2_metal.scale = glm::vec3(0.12f,  0.12f,  0.12f);
+	button2_wood.scale = glm::vec3(0.12f,  0.12f,  0.12f);
+
 
 	// render loop
 	// -----------
@@ -267,7 +297,7 @@ int main() {
 			lighting_shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 		}
 
-		float brightness = abs(cos(glfwGetTime()) / 2 ) + 1.2f;
+		float brightness = abs(cos(glfwGetTime()) / 2 ) + 0.9f;
 		lighting_shader.setVec3("light.diffuse", glm::vec3(brightness));
 		lighting_shader.setVec3("light.specular", glm::vec3(brightness * 1.2f));
 
@@ -347,60 +377,82 @@ int main() {
 		rightWall.render(lighting_shader, VAO_box);
 		leftWall.render(lighting_shader, VAO_box);
 
-		// Button
-		unsigned int diffuseTex, specularTex;
-		float buttonHeight;
-		if (BUTTON_PRESSED) {
-			diffuseTex = tex_red_bright_diffuse;
-			specularTex = tex_red_bright_specular;
-			buttonHeight = 0.51f;
-		} else {
-			diffuseTex = tex_red_dark_diffuse;
-			specularTex = tex_red_dark_specular;
-			buttonHeight = 0.53f;
+		// Button 1 (wood door)
+		{
+			unsigned int diffuseTex, specularTex;
+			float buttonXOffset;
+			if (buttonPressed[WOOD]) {
+				diffuseTex = tex_red_dark_diffuse;
+				specularTex = tex_red_dark_specular;
+				buttonXOffset = 0.01f;
+			} else {
+				diffuseTex = tex_red_bright_diffuse;
+				specularTex = tex_red_bright_specular;
+				buttonXOffset = 0.03f;
+			}
+			button1Box.diffuseTex = &diffuseTex;
+			button1Box.specularTex = &specularTex;
+			float x = rightWall.getNegativeBounds().x - buttonXOffset;
+			float y = camera.Position.y - 0.2f;
+			float z = woodDoor.getPositiveBounds().z + 0.5f;
+			button1Box.translate = glm::vec3(x, y, z);
 		}
-		buttonBox.diffuseTex = &diffuseTex;
-		buttonBox.specularTex = &specularTex;
-		buttonBox.scale = glm::vec3(0.12f,  0.12f,  0.12f);
-		buttonBox.translate = glm::vec3(0.0f, buttonHeight, 0.0f);
-		buttonBox.render(lighting_shader, VAO_box);
+		button1Box.render(lighting_shader, VAO_box);
 
-		BUTTON_CLOSE_ENOUGH = glm::length(camera.Position - glm::vec3(0.0f, 0.56f, 0.25f)) <= 1.6f;
+		// Button 2's (brick door)
+		{
+			Box* button2s[] = { &button2_brick, &button2_metal, &button2_wood };
+			float buttonXOffset;
+			if (buttonPressed[BRICK]) {
+				buttonXOffset = 0.01f;
+			} else {
+				buttonXOffset = 0.03f;
+			}
+			float x = rightWall.getNegativeBounds().x - 0.03f;
+			float y = camera.Position.y - 0.2f;
+			float z = brickDoor.getPositiveBounds().z + 0.5f;
+			for (int i = 1; i < 3; i++) {
+				button2s[i]->translate = glm::vec3(x, y, z + i * 0.7f);
+			}
+			button2_brick.translate = glm::vec3(x - buttonXOffset, y, z);
+			for (int i = 0; i < 3; i++) {
+				button2s[i]->render(lighting_shader, VAO_box);
+			}
+		}
 
 
 		// Wood door
 		{
-			float yVal = woodDoor.scale.y / 2 + doorAnim[DoorStage::WOOD] * 2.0f;
+			float yVal = woodDoor.scale.y / 2 + sin(glm::radians(doorAnim[DoorStage::WOOD] * 90.0f)) * 2.0f;
 			woodDoor.translate = glm::vec3(0, yVal, -5.0f);
 		}
 		doorAnimationStep(WOOD);
 		woodDoor.render(lighting_shader, VAO_box);
 
-		// Green door
+		// Brick door
 		{
-			float xVal = brickDoor.scale.x * -doorAnim[DoorStage::BRICK];
-			float yVal = brickDoor.scale.y / 2 + sin(glm::radians(doorAnim[DoorStage::BRICK] * 180.0f));
-			brickDoor.translate = glm::vec3(xVal, yVal, -10.0f);
+			float anim = doorAnim[DoorStage::BRICK];
+			float x = brickDoor.scale.x * anim * anim;
+			float y = brickDoor.scale.y / 2 + sin(glm::radians(anim * 180.0f));
+			brickDoor.translate = glm::vec3(x, y, -10.0f);
+			brickDoor.angle = anim * -90.0f;
 		}
-		brickDoor.angle = doorAnim[DoorStage::BRICK] * 90.0f;
 		doorAnimationStep(BRICK);
 		brickDoor.render(lighting_shader, VAO_box);
 
-		//Curtin Logo
+		/* Curtin Logo
 		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
 		curtin.angle = curtin_rotate_y;
 		curtin.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
 		curtin.scale = glm::vec3(0.2f, 0.2f, 0.001f);
 		curtin.render(lighting_shader, VAO_box);
-
-
 		//transformation for animation
-		if(BUTTON_PRESSED) {
+		if(BUTTON_1) {
 			curtin_translate_y += 1.0f;
 			curtin_rotate_y += 1.0f;
 			if(abs(curtin_translate_y - 360.0f) <= 0.1f) curtin_translate_y = 0.0f;
 			if(abs(curtin_rotate_y - 360.0f) <= 0.1f) curtin_rotate_y = 0.0f;
-		}
+		}*/
 
 		// Draw the light source
 		lamp_shader.use();
@@ -411,14 +463,10 @@ int main() {
 		model = glm::scale(model, glm::vec3(0.01f)); // a smaller cube
 		lamp_shader.setMat4("model", model);
 
-		lamp_shader.setFloat("intensity", 1.0); /*
-		if(BUTTON_PRESSED == true) lamp_shader.setFloat("intensity", 1.0);
-		else lamp_shader.setFloat("intensity", 0.3); */
+		lamp_shader.setFloat("intensity", 1.2);
 
 		glBindVertexArray(VAO_light);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
 
 
 
@@ -441,7 +489,7 @@ int main() {
 
 void doorAnimationStep(DoorStage stage) {
 	if (doorStage > stage && doorAnim[stage] < 1.0f) {
-		doorAnim[stage] = min(1.0f, doorAnim[stage] + delta_time);
+		doorAnim[stage] = min(1.0f, doorAnim[stage] + delta_time / 2);
 	}
 }
 
@@ -473,17 +521,36 @@ void process_input(GLFWwindow *window) {
         camera.ProcessKeyboard(RIGHT, delta_time, minX, maxX, minZ, maxZ);
 	}
 
-	//toggle button
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && INPUT_DELAY == 0 && BUTTON_CLOSE_ENOUGH == true) {
-		INPUT_DELAY = INPUT_MAX;
-		BUTTON_PRESSED = !BUTTON_PRESSED;
-		doorStage = BRICK;
+	// Buttons
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && INPUT_DELAY == 0) {
+		if (checkButtonRange(button1Box)) {
+			//toggle button 1 (wood door)
+			INPUT_DELAY = INPUT_MAX;
+			buttonPressed[WOOD] = true;
+			if (doorStage == WOOD) {
+				doorStage = BRICK;
+			}
+		} else if (checkButtonRange(button2_brick)) {
+			//toggle button 2 (brick door)
+			INPUT_DELAY = INPUT_MAX;
+			buttonPressed[BRICK] = true;
+			if (doorStage == BRICK) {
+				doorStage = MARBLE;
+			}
+		} else if (checkButtonRange(button2_metal)) {
+			// false button2 (metal)
+			INPUT_DELAY = INPUT_MAX;
+			button2_metal.diffuseTex = &tex_red_dark_diffuse;
+			button2_metal.specularTex = &tex_red_dark_specular;
+		} else if (checkButtonRange(button2_wood)) {
+			// false button2 (wood)
+			INPUT_DELAY = INPUT_MAX;
+			button2_wood.diffuseTex = &tex_red_dark_diffuse;
+			button2_wood.specularTex = &tex_red_dark_specular;
+		}
 	}
-	//toggle button
-	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && INPUT_DELAY == 0) {
-		INPUT_DELAY = INPUT_MAX;
-		doorStage = OTHER;
-	}
+
+	
 
 	//toggle coordinate visibility
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && INPUT_DELAY == 0) {
@@ -539,6 +606,10 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ) {
 			}
 		}
 	}
+}
+
+bool checkButtonRange(Box buttonBox) {
+	return glm::length(camera.Position - buttonBox.translate) <= button_range;
 }
 
 

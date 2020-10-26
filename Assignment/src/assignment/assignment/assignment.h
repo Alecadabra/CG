@@ -17,12 +17,6 @@
 
 #define PI 3.14159265
 
-enum DoorStage {
-	WOOD = 0,
-	BRICK = 1,
-	OTHER = 2
-};
-
 // Box coordinate with 36 vertices.
 // Every 3 coordinates will form 1 triangle.
 // The last 2 columns represent texture coordinate for mapping.
@@ -70,14 +64,6 @@ float box[] = {
 	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
 	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 };
-
-void doorAnimationStep(DoorStage stage);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void computeBounds(float&, float&, float&, float&);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void process_input(GLFWwindow *window);
-unsigned int loadTexture(char const * path);
 
 class Box {
 public:
