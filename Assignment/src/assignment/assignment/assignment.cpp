@@ -36,6 +36,9 @@ int INPUT_DELAY = 0;
 int INPUT_MAX = 20;
 
 float light_radius = 1.2f;
+bool lamp_carrying = false;
+glm::vec3 light_initial_pos = glm::vec3(0.0f, 0.4f, -0.5f);
+glm::vec3 light_pos = light_initial_pos;
 
 //Toggle (Animation or states)
 bool buttonPressed[] = {
@@ -75,29 +78,34 @@ Box button3_4(&tex_graffiti_4_diffuse, &tex_graffiti_4_specular);
 Box woodDoor(&tex_wood_diffuse, &tex_wood_specular);
 Box brickDoor(&tex_brickwall_diffuse, &tex_brickwall_specular);
 Box marbleDoor(&tex_marble2_graffiti_diffuse, &tex_marble2_graffiti_specular);
+Box metalDoorBot(&tex_metal_diffuse, &tex_metal_specular);
+Box metalDoorTop(&tex_metal_diffuse, &tex_metal_specular);
+Box metalDoorLeft(&tex_metal_diffuse, &tex_metal_specular);
+Box metalDoorRight(&tex_metal_diffuse, &tex_metal_specular);
 
 // Which door is next
 enum DoorStage {
 	WOOD = 0,
 	BRICK = 1,
 	MARBLE = 2,
-	METAL = 3
+	METAL = 3,
+	FINISH = 4
 };
 DoorStage doorStage = WOOD;
 
 Box* doorBoxes[] = {
-	&woodDoor, &brickDoor, &marbleDoor
+	&woodDoor, &brickDoor, &marbleDoor, &metalDoorBot
 };
-int doorBoxesLen = 3;
+int doorBoxesLen = 4;
 
 // Door animations
 float doorAnim[] = {
-	0.0f, 0.0f, 0.0f
+	0.0f, 0.0f, 0.0f, 0.0f
 };
 
 void doorAnimationStep(DoorStage stage);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void computeBounds(float&, float&, float&, float&);
+void computeBounds(float&, float&, float&, float&, float);
 bool checkButtonRange(Box);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -268,6 +276,37 @@ int main() {
 
 	marbleDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 
+	{
+		float holeSize = 1.2f;
+		float width = (3.0f - holeSize) / 2;
+		Box* metalDoors[] = {
+			&metalDoorBot, &metalDoorTop, &metalDoorLeft, &metalDoorRight
+		};
+		for (int i = 0; i < 4; i++) {
+			metalDoors[i]->scale = glm::vec3(3.0f, 3.0f, doorZScale);
+			metalDoors[i]->translate = glm::vec3(0.0f, 1.5f, -20.0f);
+		}
+		// Make size correct
+		metalDoorTop.scale.y = width;
+		metalDoorBot.scale.y = width;
+		metalDoorLeft.scale.x = width;
+		metalDoorRight.scale.x = width;
+
+		// Move to correct positions
+		metalDoorTop.translate.y = 3.0f - width / 2;
+		metalDoorBot.translate.y = width / 2;
+		metalDoorLeft.translate.x = -1.5f + width / 2;
+		metalDoorRight.translate.x = 1.5f - width / 2;
+
+		// Make l/r skinny on z
+		metalDoorLeft.scale.z /= 1.5f;
+		metalDoorRight.scale.z /= 1.5f;
+
+		// Make l/r short
+		metalDoorLeft.scale.y = holeSize;
+		metalDoorRight.scale.y = holeSize;
+	}
+
 	// buttons
 	float buttonDimenScale = 0.12f;
 	button1Box.scale = glm::vec3(buttonDimenScale);
@@ -310,7 +349,20 @@ int main() {
 
 
 		// activate shader
-		glm::vec3 light_pos = glm::vec3(camera.Position.x, camera.Position.y - 0.02f, camera.Position.z - 0.5f);
+		if (lamp_carrying) {
+			float minX, maxX, minZ, maxZ, pad = hitbox_pad / 4;
+			computeBounds(minX, maxX, minZ, maxZ, pad);
+			light_pos = camera.Position;
+			light_pos.x += 0.5f * camera.Front.x + 0.1f * camera.Right.x;
+			light_pos.x = med(minX, maxX, light_pos.x);
+			light_pos.y += 0.3f * camera.Front.y - 0.15f;
+			light_pos.z += 0.5f * camera.Front.z + 0.1f * camera.Right.z;
+			light_pos.z = med(minZ, maxZ, light_pos.z);
+		} else {
+			double time = glfwGetTime();
+			light_pos = glm::vec3(0.0f, 0.3f + sin(glm::radians(time * 180)) / 7.0f, -0.2f);
+			lamp_carrying = glm::length(camera.Position - light_pos) < button_range;
+		}
 		lighting_shader.use();
 		lighting_shader.setVec3("light.position", light_pos);
         lighting_shader.setVec3("viewPos", camera.Position);
@@ -319,12 +371,12 @@ int main() {
 		if (EXTRA_BRIGHT) {
 			lighting_shader.setVec3("light.ambient", 0.6f, 0.6f, 0.6f);
 		} else {
-			lighting_shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+			lighting_shader.setVec3("light.ambient", 0.08f, 0.08f, 0.08f);
 		}
 
-		float brightness = abs(cos(glfwGetTime()) / 2 ) + 0.9f;
+		float brightness = abs(cos(glfwGetTime()) / 2 ) + 1.2f;
 		lighting_shader.setVec3("light.diffuse", glm::vec3(brightness));
-		lighting_shader.setVec3("light.specular", glm::vec3(brightness * 1.2f));
+		lighting_shader.setVec3("light.specular", glm::vec3(brightness));
 
 		// material properties
         lighting_shader.setFloat("material.shininess", 65.0f);
@@ -367,7 +419,7 @@ int main() {
 			glBindVertexArray(VAO_box);
 			
 			for(int tab = 0; tab < 3; tab++)
-			{	
+			{
 				if(tab == 0) { // x
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_2D, tex_red_diffuse);
@@ -447,6 +499,9 @@ int main() {
 
 		// Button 3's (marble graffiti door)
 		{
+			Box initialDoor(&tex_brickwall_diffuse, &tex_brickwall_specular);
+			initialDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
+			initialDoor.translate = glm::vec3(0.0f, initialDoor.scale.y / 2, -15.0f);
 			Box* button3s[] = { &button3_2, &button3_3, &button3_4 };
 			float buttonXOffset;
 			if (buttonPressed[MARBLE]) {
@@ -456,11 +511,11 @@ int main() {
 			}
 			float x = rightWall.getNegativeBounds().x - 0.02f;
 			float y = camera.Position.y - 0.2f;
-			float z = marbleDoor.getPositiveBounds().z + 0.5f;
-			for (int i = 1; i < 3; i++) {
+			float z = initialDoor.getPositiveBounds().z + 0.5f;
+			for (int i = 0; i < 3; i++) {
 				button3s[i]->translate = glm::vec3(x, y, z + i * 0.7f);
 			}
-			button3_2.translate = glm::vec3(x - buttonXOffset, y, z);
+			button3_3.translate.x -= buttonXOffset;
 			for (int i = 0; i < 3; i++) {
 				button3s[i]->render(lighting_shader, VAO_box);
 			}
@@ -506,40 +561,54 @@ int main() {
 				float localAnim = (anim - 0.6f) / 3.0f * 10.0f;
 				marbleDoor.angle = localAnim * 720.0f;
 				marbleDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
-				marbleDoor.translate.z = initialScale.z - (initialScale.z) * sin(glm::radians(localAnim * 90.0f));
+				marbleDoor.translate.z = initialTranslate.z + initialTranslate.z * 4 * sin(glm::radians(localAnim * 45.0f));
 			}
 		}
 		doorAnimationStep(MARBLE);
 		marbleDoor.render(lighting_shader, VAO_box);
 
-		/* Curtin Logo
-		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
-		curtin.angle = curtin_rotate_y;
-		curtin.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
-		curtin.scale = glm::vec3(0.2f, 0.2f, 0.001f);
-		curtin.render(lighting_shader, VAO_box);
-		//transformation for animation
-		if(BUTTON_1) {
-			curtin_translate_y += 1.0f;
-			curtin_rotate_y += 1.0f;
-			if(abs(curtin_translate_y - 360.0f) <= 0.1f) curtin_translate_y = 0.0f;
-			if(abs(curtin_rotate_y - 360.0f) <= 0.1f) curtin_rotate_y = 0.0f;
-		}*/
+
+		// Metal door
+		{
+			doorAnimationStep(METAL);
+			Box* metalDoors[] = {
+			&metalDoorBot, &metalDoorTop, &metalDoorLeft, &metalDoorRight
+			};
+			for (int i = 0; i < 4; i++) {
+				metalDoors[i]->render(lighting_shader, VAO_box);
+			}
+		}
+
+
 
 		// Draw the light source
+		glm::vec3 lampRotate = glm::vec3(0.0f, 1.0f, 0.0f);
+		float lampAngle;
+		if (lamp_carrying) {
+			lampAngle = -camera.Yaw;
+		} else {
+			lampAngle = sin(glfwGetTime()) * 90.0f;
+		}
+
 		Box lampShaft(&tex_wood_diffuse, &tex_wood_specular);
 		lampShaft.translate = glm::vec3(light_pos.x, light_pos.y - 0.045f, light_pos.z);
 		lampShaft.scale = glm::vec3(0.013f, 0.08f, 0.013f);
+		lampShaft.angle = lampAngle;
+		lampShaft.rotate = lampRotate;
 		lampShaft.render(lighting_shader, VAO_box);
 
 		Box lampDetailTop(&tex_wood_diffuse, &tex_wood_specular);
 		lampDetailTop.translate = glm::vec3(light_pos.x, light_pos.y - 0.01f, light_pos.z);
 		lampDetailTop.scale = glm::vec3(0.02f, 0.01, 0.02f);
+		lampDetailTop.angle = lampAngle;
+		lampDetailTop.rotate = lampRotate;
 		lampDetailTop.render(lighting_shader, VAO_box);
 
 		Box lampDetailBot(&tex_wood_diffuse, &tex_wood_specular);
 		lampDetailBot.translate = glm::vec3(light_pos.x, light_pos.y - 0.08f, light_pos.z);
 		lampDetailBot.scale = glm::vec3(0.02f, 0.025, 0.02f);
+		lampDetailBot.angle = lampAngle;
+		lampDetailBot.rotate = lampRotate;
 		lampDetailBot.render(lighting_shader, VAO_box);
 
 		lamp_shader.use();
@@ -550,6 +619,8 @@ int main() {
 		Box lampLight(&tex_red_bright_diffuse, &tex_red_specular);
 		lampLight.translate = light_pos;
 		lampLight.scale = glm::vec3(0.01f);
+		lampLight.angle = lampAngle;
+		lampLight.rotate = lampRotate;
 		lampLight.render(lamp_shader, VAO_light);
 
 
@@ -588,19 +659,19 @@ void process_input(GLFWwindow *window) {
 	float minX, maxX, minZ, maxZ;
 	
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-		computeBounds(minX, maxX, minZ, maxZ);
+		computeBounds(minX, maxX, minZ, maxZ, hitbox_pad);
         camera.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
 	}
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-		computeBounds(minX, maxX, minZ, maxZ);
+		computeBounds(minX, maxX, minZ, maxZ, hitbox_pad);
         camera.ProcessKeyboard(BACKWARD, delta_time, minX, maxX, minZ, maxZ);
 	}
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		computeBounds(minX, maxX, minZ, maxZ);
+		computeBounds(minX, maxX, minZ, maxZ, hitbox_pad);
         camera.ProcessKeyboard(LEFT, delta_time, minX, maxX, minZ, maxZ);
 	}
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		computeBounds(minX, maxX, minZ, maxZ);
+		computeBounds(minX, maxX, minZ, maxZ, hitbox_pad);
         camera.ProcessKeyboard(RIGHT, delta_time, minX, maxX, minZ, maxZ);
 	}
 
@@ -682,12 +753,12 @@ void process_input(GLFWwindow *window) {
 }
 
 
-void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ) {
+void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad) {
 	// Start with bounds of static walls
-	minX = leftWall.getPositiveBounds().x + hitbox_pad;
-	maxX = rightWall.getNegativeBounds().x - hitbox_pad;
-	minZ = floorBox.getNegativeBounds().z + hitbox_pad;
-	maxZ = floorBox.getPositiveBounds().z - hitbox_pad;
+	minX = leftWall.getPositiveBounds().x + pad;
+	maxX = rightWall.getNegativeBounds().x - pad;
+	minZ = floorBox.getNegativeBounds().z + pad;
+	maxZ = floorBox.getPositiveBounds().z - pad;
 
 	for (int i = 0; i < doorBoxesLen; i++) {
 		glm::vec3 wallMin = doorBoxes[i]->getNegativeBounds();
@@ -698,11 +769,11 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ) {
 
 			if (camera.Position.z > wallMax.z && camera.Position.y > wallMin.y) {
 				// Try to walk through from +ve z side
-				minZ = max(minZ, wallMax.z + hitbox_pad);
+				minZ = max(minZ, wallMax.z + pad);
 			}
 			if (camera.Position.z < wallMin.z && camera.Position.y > wallMin.y) {
 				// Try to walk through from -ve z side
-				maxZ = min(maxZ, wallMin.z - hitbox_pad);
+				maxZ = min(maxZ, wallMin.z - pad);
 			}
 		}
 
@@ -711,11 +782,11 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ) {
 
 			if (camera.Position.x > wallMax.x && camera.Position.y > wallMin.y) {
 				// Try to walk through from +ve z side
-				minX = max(minX, wallMax.x + hitbox_pad);
+				minX = max(minX, wallMax.x + pad);
 			}
 			if (camera.Position.z < wallMin.x && camera.Position.y > wallMin.y) {
 				// Try to walk through from -ve z side
-				maxX = min(maxX, wallMin.x - hitbox_pad);
+				maxX = min(maxX, wallMin.x - pad);
 			}
 		}
 	}
