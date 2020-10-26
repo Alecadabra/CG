@@ -17,6 +17,12 @@
 
 #define PI 3.14159265
 
+enum DoorStage {
+	WOOD = 0,
+	GREEN = 1,
+	OTHER = 2
+};
+
 // Box coordinate with 36 vertices.
 // Every 3 coordinates will form 1 triangle.
 // The last 2 columns represent texture coordinate for mapping.
@@ -65,10 +71,7 @@ float box[] = {
 	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 };
 
-void renderBox(
-	glm::mat4 model, unsigned int diffuseTex, unsigned int specularTex,
-	Shader lighting_shader
-);
+void doorAnimationStep(DoorStage stage);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -132,7 +135,25 @@ public:
 		return model;
 	}
 
-	void bind(unsigned int vao) { glBindVertexArray(vao); }
+	void bind(unsigned int vao) {
+		glBindVertexArray(vao);
+	}
 
-	void draw() { glDrawArrays(GL_TRIANGLES, 0, 36); }
+	void draw() {
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+
+	glm::vec3 getNegativeBounds() {
+		float negX = (-scale.x) / 2 + translate.x;
+		float negY = (-scale.y) / 2 + translate.y;
+		float negZ = (-scale.z) / 2 + translate.z;
+		return glm::vec3(negX, negY, negZ);
+	}
+	
+	glm::vec3 getPositiveBounds() {
+		float posX = scale.x / 2 + translate.x;
+		float posY = scale.y / 2 + translate.y;
+		float posZ = scale.z / 2 + translate.z;
+		return glm::vec3(posX, posY, posZ);
+	}
 };

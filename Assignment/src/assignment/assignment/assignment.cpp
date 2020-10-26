@@ -16,6 +16,8 @@ const float FAR_CLIP = 300.0f;
 
 const float cam_height = 0.8f;
 
+const float hitbox_pad = 0.25f;
+
 // camera
 Camera camera(glm::vec3(0.0f, cam_height, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
@@ -48,13 +50,29 @@ bool EXTRA_BRIGHT = false;
 float curtin_rotate_y = 0.0;
 float curtin_translate_y = 0.0;
 
-
 // Boxes
 Box floorBox(&tex_marble_diffuse, &tex_marble_specular);
 Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
 Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
 Box buttonBox(nullptr, nullptr);
 Box curtin(&tex_curtin_diffuse, &tex_curtin_specular);
+
+// Which door is next
+DoorStage doorStage = WOOD;
+
+// Door boxes
+Box woodDoor(&tex_wood_diffuse, &tex_wood_specular);
+Box greenDoor(&tex_green_diffuse, &tex_green_specular);
+
+Box* doorBoxes[] = {
+	&woodDoor, &greenDoor
+};
+int doorBoxesLen = 2;
+
+// Door animations
+float doorAnim[] = {
+	0.0f, 0.0f
+};
 
 int main() {
 
@@ -183,15 +201,20 @@ int main() {
 	// set static transformations ----------------------------------------------
 
 	// right wall
-	rightWall.translate = glm::vec3(1.5f, 1.5f, 0.0f);
-	rightWall.scale = glm::vec3(0.001f, 3.0f, 14.0f);
+	rightWall.translate = glm::vec3(1.5f, 1.5f, -3.0f);
+	rightWall.scale = glm::vec3(0.001f, 3.0f, 18.0f);
 
 	// left wall
-	leftWall.translate = glm::vec3(-1.5f, 1.5f, 0.0f);
-	leftWall.scale = glm::vec3(0.001f, 3.0f, 14.0f);
+	leftWall.translate = glm::vec3(-1.5f, 1.5f, -3.0f);
+	leftWall.scale = glm::vec3(0.001f, 3.0f, 18.0f);
 
 	// floor
-	floorBox.scale = glm::vec3(3.0f, 0.001f, 14.0f);
+	floorBox.translate = glm::vec3(0.0f, 0.0f, -3.0f);
+	floorBox.scale = glm::vec3(3.0f, 0.001f, 18.0f);
+
+	woodDoor.scale = glm::vec3(3.0f, 3.0f, 1.0f);
+
+	greenDoor.scale = glm::vec3(3.0f, 3.0f, 1.0f);
 
 
 	// render loop
@@ -229,9 +252,9 @@ int main() {
 			lighting_shader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
 		}
 
-		float brightness = abs(sin(glfwGetTime()) + 0.5f) + 0.8f;
-		lighting_shader.setVec3("light.diffuse", brightness * 0.8f, brightness * 0.8f, brightness * 0.8f);
-		lighting_shader.setVec3("light.specular", brightness * 1.0f, brightness * 1.0f, brightness * 1.0f);
+		float brightness = abs(cos(glfwGetTime()) / 2 ) + 0.8f;
+		lighting_shader.setVec3("light.diffuse", glm::vec3(brightness * 0.8f));
+		lighting_shader.setVec3("light.specular", glm::vec3(brightness));
 
 		/*if(BUTTON_PRESSED == true)
 		{
@@ -316,11 +339,7 @@ int main() {
 
 		// render static objects
 		floorBox.render(lighting_shader, VAO_box);
-
-		//Right wall
 		rightWall.render(lighting_shader, VAO_box);
-
-		// Left wall
 		leftWall.render(lighting_shader, VAO_box);
 
 		// Button
@@ -343,6 +362,25 @@ int main() {
 
 		BUTTON_CLOSE_ENOUGH = glm::length(camera.Position - glm::vec3(0.0f, 0.56f, 0.25f)) <= 1.6f;
 
+
+		// Wood door
+		{
+			float yVal = woodDoor.scale.y / 2 + doorAnim[DoorStage::WOOD] * 2.0f;
+			woodDoor.translate = glm::vec3(0, yVal, -5.0f);
+		}
+		doorAnimationStep(WOOD);
+		woodDoor.render(lighting_shader, VAO_box);
+
+		// Green door
+		{
+			float xVal = greenDoor.scale.x * -doorAnim[DoorStage::GREEN];
+			float yVal = greenDoor.scale.y / 2 + sin(glm::radians(doorAnim[DoorStage::GREEN] * 180.0f));
+			greenDoor.translate = glm::vec3(xVal, yVal, -10.0f);
+		}
+		greenDoor.angle = doorAnim[DoorStage::GREEN] * 90.0f;
+		greenDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
+		doorAnimationStep(GREEN);
+		greenDoor.render(lighting_shader, VAO_box);
 
 		//Curtin Logo
 		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
@@ -397,6 +435,12 @@ int main() {
 	return EXIT_SUCCESS;
 }
 
+void doorAnimationStep(DoorStage stage) {
+	if (doorStage > stage && doorAnim[stage] < 1.0f) {
+		doorAnim[stage] = min(1.0f, doorAnim[stage] + delta_time);
+	}
+}
+
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void process_input(GLFWwindow *window) {
@@ -406,10 +450,34 @@ void process_input(GLFWwindow *window) {
 	}
 
 	float minX, maxX, minZ, maxZ;
-	minX = leftWall.translate.x + (leftWall.scale.x / 2 + 0.2f);
-	maxX = rightWall.translate.x - (rightWall.scale.x / 2 + 0.2f);
-	minZ = floorBox.translate.z + (floorBox.scale.z / 2 + 0.2f);
-	maxZ = floorBox.translate.z - (floorBox.scale.z / 2 + 0.2f);
+	minX = leftWall.getPositiveBounds().x + hitbox_pad;
+	maxX = rightWall.getNegativeBounds().x - hitbox_pad;
+	minZ = floorBox.getNegativeBounds().z + hitbox_pad;
+	maxZ = floorBox.getPositiveBounds().z - hitbox_pad;
+
+	for (int i = 0; i < doorBoxesLen; i++) {
+		glm::vec3 wallMin = doorBoxes[i]->getNegativeBounds();
+		glm::vec3 wallMax = doorBoxes[i]->getPositiveBounds();
+
+		if (wallMin.x < camera.Position.x && camera.Position.x > wallMax.x) {
+			// Make sure camera is within the x range of the wall
+
+			if (camera.Position.z > wallMax.z && camera.Position.y > wallMin.y) {
+				// Try to walk through from +ve z side
+				minZ = max(minZ, wallMax.z + hitbox_pad);
+			}
+			if (camera.Position.z < wallMin.z && camera.Position.y > wallMin.y) {
+				// Try to walk through from -ve z side
+				maxZ = min(maxZ, wallMin.z - hitbox_pad);
+			}
+		}
+	}
+
+	if (woodDoor.scale.y / 2 + woodDoor.translate.y < cam_height) {
+		// Player cannot fit under door
+		minZ = woodDoor.scale.z / 2 + woodDoor.translate.z;
+	}
+	
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         camera.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
@@ -424,10 +492,16 @@ void process_input(GLFWwindow *window) {
         camera.ProcessKeyboard(RIGHT, delta_time, minX, maxX, minZ, maxZ);
 	}
 
-	//toggle red button
+	//toggle button
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && INPUT_DELAY == 0 && BUTTON_CLOSE_ENOUGH == true) {
 		INPUT_DELAY = INPUT_MAX;
 		BUTTON_PRESSED = !BUTTON_PRESSED;
+		doorStage = GREEN;
+	}
+	//toggle button
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && INPUT_DELAY == 0) {
+		INPUT_DELAY = INPUT_MAX;
+		doorStage = OTHER;
 	}
 
 	//toggle coordinate visibility
