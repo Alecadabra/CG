@@ -19,7 +19,7 @@
 
 enum DoorStage {
 	WOOD = 0,
-	GREEN = 1,
+	BRICK = 1,
 	OTHER = 2
 };
 
@@ -73,6 +73,7 @@ float box[] = {
 
 void doorAnimationStep(DoorStage stage);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void computeBounds(float&, float&, float&, float&);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow *window);

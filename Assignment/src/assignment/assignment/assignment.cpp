@@ -1,8 +1,8 @@
 #include "assignment.h"
 
 // textures
-unsigned int tex_wood_diffuse, tex_street_diffuse, tex_grass_diffuse, tex_marble_diffuse, tex_curtin_diffuse;
-unsigned int tex_wood_specular, tex_street_specular, tex_grass_specular, tex_marble_specular, tex_curtin_specular;
+unsigned int tex_wood_diffuse, tex_brickwall_diffuse, tex_metal_diffuse, tex_marble2_diffuse, tex_street_diffuse, tex_grass_diffuse, tex_marble_diffuse, tex_curtin_diffuse;
+unsigned int tex_wood_specular, tex_brickwall_specular, tex_metal_specular, tex_marble2_specular, tex_street_specular, tex_grass_specular, tex_marble_specular, tex_curtin_specular;
 
 unsigned int tex_red_dark_diffuse, tex_red_bright_diffuse, tex_red_diffuse, tex_green_diffuse, tex_blue_diffuse;
 unsigned int tex_red_dark_specular, tex_red_bright_specular, tex_red_specular, tex_green_specular, tex_blue_specular;
@@ -34,7 +34,7 @@ float last_frame = 0.0f;
 int INPUT_DELAY = 0;
 int INPUT_MAX = 20;
 
-float light_radius = 1.0f;
+float light_radius = 1.2f;
 
 //Toggle (Animation or states)
 bool BUTTON_PRESSED = false;
@@ -52,6 +52,7 @@ float curtin_translate_y = 0.0;
 
 // Boxes
 Box floorBox(&tex_marble_diffuse, &tex_marble_specular);
+Box roofBox(&tex_marble_diffuse, &tex_marble_specular);
 Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
 Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
 Box buttonBox(nullptr, nullptr);
@@ -62,10 +63,10 @@ DoorStage doorStage = WOOD;
 
 // Door boxes
 Box woodDoor(&tex_wood_diffuse, &tex_wood_specular);
-Box greenDoor(&tex_green_diffuse, &tex_green_specular);
+Box brickDoor(&tex_brickwall_diffuse, &tex_brickwall_specular);
 
 Box* doorBoxes[] = {
-	&woodDoor, &greenDoor
+	&woodDoor, &brickDoor
 };
 int doorBoxesLen = 2;
 
@@ -171,25 +172,30 @@ int main() {
 	// -------------------------
 	tex_wood_diffuse = loadTexture(FileSystem::getPath("resources/textures/wood2.jpg").c_str());
 	tex_wood_specular = loadTexture(FileSystem::getPath("resources/textures/wood2_specular.jpg").c_str());
-	tex_street_diffuse = loadTexture(FileSystem::getPath("resources/textures/street.png").c_str());
-	tex_street_specular = loadTexture(FileSystem::getPath("resources/textures/street_specular.png").c_str());
-	tex_grass_diffuse = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
-	tex_grass_specular = loadTexture(FileSystem::getPath("resources/textures/grass_specular.jpg").c_str());
+	tex_brickwall_diffuse = loadTexture(FileSystem::getPath("resources/textures/brickwall.jpg").c_str());
+	tex_brickwall_specular = loadTexture(FileSystem::getPath("resources/textures/brickwall_specular.jpg").c_str());
+	tex_metal_diffuse = loadTexture(FileSystem::getPath("resources/textures/metal.png").c_str());
+	tex_metal_specular = loadTexture(FileSystem::getPath("resources/textures/metal_specular.png").c_str());
+	tex_marble2_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble2.jpg").c_str());
+	tex_marble2_specular = loadTexture(FileSystem::getPath("resources/textures/marble2_specular.jpg").c_str());
+	//tex_street_diffuse = loadTexture(FileSystem::getPath("resources/textures/street.png").c_str());
+	//tex_street_specular = loadTexture(FileSystem::getPath("resources/textures/street_specular.png").c_str());
+	//tex_grass_diffuse = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
+	//tex_grass_specular = loadTexture(FileSystem::getPath("resources/textures/grass_specular.jpg").c_str());
 	tex_marble_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
 	tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble_specular.jpg").c_str());
 	tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
 	tex_curtin_specular = loadTexture(FileSystem::getPath("resources/textures/curtin_specular.jpg").c_str());
-
 	tex_red_dark_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_dark.jpg").c_str());
 	tex_red_dark_specular = loadTexture(FileSystem::getPath("resources/textures/red_dark_specular.jpg").c_str());
 	tex_red_bright_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_bright.jpg").c_str());
 	tex_red_bright_specular = loadTexture(FileSystem::getPath("resources/textures/red_bright_specular.jpg").c_str());
-	tex_red_diffuse = loadTexture(FileSystem::getPath("resources/textures/red.jpg").c_str());
-	tex_red_specular = loadTexture(FileSystem::getPath("resources/textures/red_specular.jpg").c_str());
-	tex_green_diffuse = loadTexture(FileSystem::getPath("resources/textures/green.jpg").c_str());
-	tex_green_specular = loadTexture(FileSystem::getPath("resources/textures/green_specular.jpg").c_str());
-	tex_blue_diffuse = loadTexture(FileSystem::getPath("resources/textures/blue.jpg").c_str());
-	tex_blue_specular = loadTexture(FileSystem::getPath("resources/textures/blue_specular.jpg").c_str());
+	//tex_red_diffuse = loadTexture(FileSystem::getPath("resources/textures/red.jpg").c_str());
+	//tex_red_specular = loadTexture(FileSystem::getPath("resources/textures/red_specular.jpg").c_str());
+	//tex_green_diffuse = loadTexture(FileSystem::getPath("resources/textures/green.jpg").c_str());
+	//tex_green_specular = loadTexture(FileSystem::getPath("resources/textures/green_specular.jpg").c_str());
+	//tex_blue_diffuse = loadTexture(FileSystem::getPath("resources/textures/blue.jpg").c_str());
+	//tex_blue_specular = loadTexture(FileSystem::getPath("resources/textures/blue_specular.jpg").c_str());
 
 	
 	//shader configuration -----------------------------------------------------
@@ -212,9 +218,15 @@ int main() {
 	floorBox.translate = glm::vec3(0.0f, 0.0f, -3.0f);
 	floorBox.scale = glm::vec3(3.0f, 0.001f, 18.0f);
 
+	// roof
+	roofBox.translate = glm::vec3(0.0f, 3.0f, -3.0f);
+	roofBox.scale = glm::vec3(3.0f, 0.001f, 18.0f);
+
+	// doors
 	woodDoor.scale = glm::vec3(3.0f, 3.0f, 1.0f);
 
-	greenDoor.scale = glm::vec3(3.0f, 3.0f, 1.0f);
+	brickDoor.scale = glm::vec3(3.0f, 3.0f, 1.0f);
+	brickDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
 
 
 	// render loop
@@ -240,6 +252,9 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
+		light_pos = glm::vec3(camera.Position.x, camera.Position.y + 0.2f, camera.Position.z);
+
+
 		// activate shader
 		lighting_shader.use();
 		lighting_shader.setVec3("light.position", light_pos);
@@ -249,23 +264,12 @@ int main() {
 		if (EXTRA_BRIGHT) {
 			lighting_shader.setVec3("light.ambient", 0.6f, 0.6f, 0.6f);
 		} else {
-			lighting_shader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
+			lighting_shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 		}
 
-		float brightness = abs(cos(glfwGetTime()) / 2 ) + 0.8f;
-		lighting_shader.setVec3("light.diffuse", glm::vec3(brightness * 0.8f));
-		lighting_shader.setVec3("light.specular", glm::vec3(brightness));
-
-		/*if(BUTTON_PRESSED == true)
-		{
-			lighting_shader.setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
-			lighting_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-		}
-		else
-		{
-			lighting_shader.setVec3("light.diffuse", 0.0f, 0.0f, 0.0f);
-			lighting_shader.setVec3("light.specular", 0.0f, 0.0f, 0.0f);
-		}*/
+		float brightness = abs(cos(glfwGetTime()) / 2 ) + 1.2f;
+		lighting_shader.setVec3("light.diffuse", glm::vec3(brightness));
+		lighting_shader.setVec3("light.specular", glm::vec3(brightness * 1.2f));
 
 		// material properties
         lighting_shader.setFloat("material.shininess", 65.0f);
@@ -339,6 +343,7 @@ int main() {
 
 		// render static objects
 		floorBox.render(lighting_shader, VAO_box);
+		roofBox.render(lighting_shader, VAO_box);
 		rightWall.render(lighting_shader, VAO_box);
 		leftWall.render(lighting_shader, VAO_box);
 
@@ -373,14 +378,13 @@ int main() {
 
 		// Green door
 		{
-			float xVal = greenDoor.scale.x * -doorAnim[DoorStage::GREEN];
-			float yVal = greenDoor.scale.y / 2 + sin(glm::radians(doorAnim[DoorStage::GREEN] * 180.0f));
-			greenDoor.translate = glm::vec3(xVal, yVal, -10.0f);
+			float xVal = brickDoor.scale.x * -doorAnim[DoorStage::BRICK];
+			float yVal = brickDoor.scale.y / 2 + sin(glm::radians(doorAnim[DoorStage::BRICK] * 180.0f));
+			brickDoor.translate = glm::vec3(xVal, yVal, -10.0f);
 		}
-		greenDoor.angle = doorAnim[DoorStage::GREEN] * 90.0f;
-		greenDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
-		doorAnimationStep(GREEN);
-		greenDoor.render(lighting_shader, VAO_box);
+		brickDoor.angle = doorAnim[DoorStage::BRICK] * 90.0f;
+		doorAnimationStep(BRICK);
+		brickDoor.render(lighting_shader, VAO_box);
 
 		//Curtin Logo
 		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
@@ -449,46 +453,23 @@ void process_input(GLFWwindow *window) {
 		glfwSetWindowShouldClose(window, true);
 	}
 
+	// Bounds
 	float minX, maxX, minZ, maxZ;
-	minX = leftWall.getPositiveBounds().x + hitbox_pad;
-	maxX = rightWall.getNegativeBounds().x - hitbox_pad;
-	minZ = floorBox.getNegativeBounds().z + hitbox_pad;
-	maxZ = floorBox.getPositiveBounds().z - hitbox_pad;
-
-	for (int i = 0; i < doorBoxesLen; i++) {
-		glm::vec3 wallMin = doorBoxes[i]->getNegativeBounds();
-		glm::vec3 wallMax = doorBoxes[i]->getPositiveBounds();
-
-		if (wallMin.x < camera.Position.x && camera.Position.x > wallMax.x) {
-			// Make sure camera is within the x range of the wall
-
-			if (camera.Position.z > wallMax.z && camera.Position.y > wallMin.y) {
-				// Try to walk through from +ve z side
-				minZ = max(minZ, wallMax.z + hitbox_pad);
-			}
-			if (camera.Position.z < wallMin.z && camera.Position.y > wallMin.y) {
-				// Try to walk through from -ve z side
-				maxZ = min(maxZ, wallMin.z - hitbox_pad);
-			}
-		}
-	}
-
-	if (woodDoor.scale.y / 2 + woodDoor.translate.y < cam_height) {
-		// Player cannot fit under door
-		minZ = woodDoor.scale.z / 2 + woodDoor.translate.z;
-	}
 	
-
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		computeBounds(minX, maxX, minZ, maxZ);
         camera.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
 	}
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		computeBounds(minX, maxX, minZ, maxZ);
         camera.ProcessKeyboard(BACKWARD, delta_time, minX, maxX, minZ, maxZ);
 	}
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		computeBounds(minX, maxX, minZ, maxZ);
         camera.ProcessKeyboard(LEFT, delta_time, minX, maxX, minZ, maxZ);
 	}
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		computeBounds(minX, maxX, minZ, maxZ);
         camera.ProcessKeyboard(RIGHT, delta_time, minX, maxX, minZ, maxZ);
 	}
 
@@ -496,7 +477,7 @@ void process_input(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && INPUT_DELAY == 0 && BUTTON_CLOSE_ENOUGH == true) {
 		INPUT_DELAY = INPUT_MAX;
 		BUTTON_PRESSED = !BUTTON_PRESSED;
-		doorStage = GREEN;
+		doorStage = BRICK;
 	}
 	//toggle button
 	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && INPUT_DELAY == 0) {
@@ -524,12 +505,39 @@ void process_input(GLFWwindow *window) {
 
 	// increase light brightness radius
 	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-		light_radius = min(2.0f, light_radius + delta_time * 2.0f);
+		light_radius = min(2.5f, light_radius + delta_time * 2.0f);
 	}
 
 	// decrease light brightness radius
 	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
 		light_radius = max(0.0f, light_radius - delta_time * 2.0f);
+	}
+}
+
+
+void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ) {
+	// Start with bounds of static walls
+	minX = leftWall.getPositiveBounds().x + hitbox_pad;
+	maxX = rightWall.getNegativeBounds().x - hitbox_pad;
+	minZ = floorBox.getNegativeBounds().z + hitbox_pad;
+	maxZ = floorBox.getPositiveBounds().z - hitbox_pad;
+
+	for (int i = 0; i < doorBoxesLen; i++) {
+		glm::vec3 wallMin = doorBoxes[i]->getNegativeBounds();
+		glm::vec3 wallMax = doorBoxes[i]->getPositiveBounds();
+
+		if (wallMin.x < camera.Position.x && camera.Position.x < wallMax.x) {
+			// Make sure camera is within the x range of the wall
+
+			if (camera.Position.z > wallMax.z && camera.Position.y > wallMin.y) {
+				// Try to walk through from +ve z side
+				minZ = max(minZ, wallMax.z + hitbox_pad);
+			}
+			if (camera.Position.z < wallMin.z && camera.Position.y > wallMin.y) {
+				// Try to walk through from -ve z side
+				maxZ = min(maxZ, wallMin.z - hitbox_pad);
+			}
+		}
 	}
 }
 
