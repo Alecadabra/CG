@@ -10,8 +10,6 @@ unsigned int tex_red_dark_specular, tex_red_bright_specular, tex_red_specular, t
 unsigned int tex_marble2_graffiti_diffuse, tex_graffiti_2_diffuse, tex_graffiti_3_diffuse, tex_graffiti_4_diffuse;
 unsigned int tex_marble2_graffiti_specular, tex_graffiti_2_specular, tex_graffiti_3_specular, tex_graffiti_4_specular;
 
-unsigned int tex_night_sky;
-
 // settings
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
@@ -62,6 +60,9 @@ Box floorBox(&tex_marble_diffuse, &tex_marble_specular);
 Box roofBox(&tex_marble_diffuse, &tex_marble_specular);
 Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
 Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
+
+Camera badGuy(glm::vec3(0.0f, cam_height / 2, 5.0f));
+Box badGuyBox(&tex_grass_diffuse, &tex_grass_specular);
 
 // Button boxes
 Box button1Box(nullptr, nullptr);
@@ -269,6 +270,10 @@ int main() {
 	roofBox.translate = glm::vec3(0.0f, 3.0f, -8.0f);
 	roofBox.scale = glm::vec3(3.0f, 0.001f, 30.0f);
 
+	// bad guy
+	badGuyBox.translate = glm::vec3(0.0f, 0.5f, -5.0f);
+	badGuy.MovementSpeed = SPEED / 2;
+
 	// doors
 	float doorZScale = 0.8f;
 	woodDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
@@ -459,11 +464,26 @@ int main() {
 			}
 		}
 
-		// render static objects
+		// render static objects -----------------------------------------------
 		floorBox.render(lighting_shader, VAO_box);
 		roofBox.render(lighting_shader, VAO_box);
 		rightWall.render(lighting_shader, VAO_box);
 		leftWall.render(lighting_shader, VAO_box);
+
+
+		// bad guy -------------------------------------------------------------
+		{
+			badGuy.Front = glm::normalize(camera.Position - badGuy.Position);
+			float minX, maxX, minZ, maxZ, pad = hitbox_pad / 8;
+			computeBounds(minX, maxX, minZ, maxZ, pad);
+			badGuy.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
+			//light_pos = camera.Position;
+			//light_pos.x += 0.5f * camera.Front.x + 0.1f * camera.Right.x;
+			//light_pos.y += 0.3f * camera.Front.y - 0.15f;
+			//light_pos.z += 0.5f * camera.Front.z + 0.1f * camera.Right.z;
+			badGuyBox.render(lighting_shader, VAO_box);
+		}
+
 
 		// buttons -------------------------------------------------------------
 
