@@ -94,10 +94,10 @@ public:
 		this->translate = translate;
 	}
 
-	void render(Shader shader, unsigned int vao) {
+	void render(Shader shader, unsigned int vao, glm::mat4 model = glm::mat4()) {
 		bind(vao);
 		activateTextures();
-		shader.setMat4("model", transform());
+		shader.setMat4("model", transform(model));
 		draw();
 	}
 
@@ -108,16 +108,17 @@ public:
 		glBindTexture(GL_TEXTURE_2D, *specularTex);
 	}
 
-	glm::mat4 transform() {
-		glm::mat4 model = glm::mat4();
+	glm::mat4 transform(glm::mat4 inModel) {
 
-		model = glm::translate(model, translate);
+		glm::mat4 model = glm::translate(glm::mat4(), translate);
 
 		if (this->angle != 0.0f) {
 			model = glm::rotate(model, glm::radians(angle), rotate);
 		}
 
 		model = glm::scale(model, scale);
+
+		model *= inModel;
 		
 		return model;
 	}

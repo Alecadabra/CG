@@ -7,6 +7,9 @@ unsigned int tex_wood_specular, tex_brickwall_specular, tex_metal_specular, tex_
 unsigned int tex_red_dark_diffuse, tex_red_bright_diffuse, tex_red_diffuse, tex_green_diffuse, tex_blue_diffuse;
 unsigned int tex_red_dark_specular, tex_red_bright_specular, tex_red_specular, tex_green_specular, tex_blue_specular;
 
+unsigned int tex_marble2_graffiti_diffuse, tex_graffiti_2_diffuse, tex_graffiti_3_diffuse, tex_graffiti_4_diffuse;
+unsigned int tex_marble2_graffiti_specular, tex_graffiti_2_specular, tex_graffiti_3_specular, tex_graffiti_4_specular;
+
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -25,9 +28,6 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
-// lighting
-glm::vec3 light_pos(0.0f, 1.0f, 0.1f);
-
 // timing
 float delta_time = 0.0f;	// time between current frame and last frame
 float last_frame = 0.0f;
@@ -40,9 +40,10 @@ float light_radius = 1.2f;
 //Toggle (Animation or states)
 bool buttonPressed[] = {
 	false,
+	false,
 	false
 };
-int buttonPressedLen = 2;
+int buttonPressedLen = 3;
 
 bool SHOW_COORDINATE = false;
 
@@ -65,11 +66,15 @@ Box button1Box(nullptr, nullptr);
 Box button2_brick(&tex_brickwall_diffuse, &tex_brickwall_specular);
 Box button2_metal(&tex_metal_diffuse, &tex_metal_specular);
 Box button2_wood(&tex_wood_diffuse, &tex_wood_specular);
+Box button3_2(&tex_graffiti_2_diffuse, &tex_graffiti_2_specular);
+Box button3_3(&tex_graffiti_3_diffuse, &tex_graffiti_3_specular);
+Box button3_4(&tex_graffiti_4_diffuse, &tex_graffiti_4_specular);
+
 
 // Door boxes
 Box woodDoor(&tex_wood_diffuse, &tex_wood_specular);
 Box brickDoor(&tex_brickwall_diffuse, &tex_brickwall_specular);
-Box marbleDoor(&tex_marble2_diffuse, &tex_marble2_specular);
+Box marbleDoor(&tex_marble2_graffiti_diffuse, &tex_marble2_graffiti_specular);
 
 // Which door is next
 enum DoorStage {
@@ -220,6 +225,14 @@ int main() {
 	//tex_green_specular = loadTexture(FileSystem::getPath("resources/textures/green_specular.jpg").c_str());
 	//tex_blue_diffuse = loadTexture(FileSystem::getPath("resources/textures/blue.jpg").c_str());
 	//tex_blue_specular = loadTexture(FileSystem::getPath("resources/textures/blue_specular.jpg").c_str());
+	tex_marble2_graffiti_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble2_graffiti.jpg").c_str());
+	tex_marble2_graffiti_specular = loadTexture(FileSystem::getPath("resources/textures/marble2_graffiti_specular.jpg").c_str());
+	tex_graffiti_2_diffuse = loadTexture(FileSystem::getPath("resources/textures/graffiti_2_diffuse.jpg").c_str());
+	tex_graffiti_2_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_2_specular.jpg").c_str());
+	tex_graffiti_3_diffuse = loadTexture(FileSystem::getPath("resources/textures/graffiti_3_diffuse.jpg").c_str());
+	tex_graffiti_3_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_3_specular.jpg").c_str());
+	tex_graffiti_4_diffuse = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_diffuse.jpg").c_str());
+	tex_graffiti_4_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_specular.jpg").c_str());
 
 	
 	//shader configuration -----------------------------------------------------
@@ -263,6 +276,15 @@ int main() {
 	button2_metal.scale = glm::vec3(buttonDimenScale);
 	button2_wood.scale = glm::vec3(buttonDimenScale);
 
+	{
+		Box* buttons[] = { &button3_2, &button3_3, &button3_4 };
+		for (int i = 0; i < 3; i++) {
+			buttons[i]->scale = glm::vec3(buttonDimenScale);
+			buttons[i]->angle = 90.0f;
+			buttons[i]->rotate = glm::vec3(1.0f, 0.0f, 0.0f);
+		}
+	}
+
 
 	// render loop
 	// -----------
@@ -287,10 +309,8 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-		light_pos = glm::vec3(camera.Position.x, camera.Position.y + 0.2f, camera.Position.z);
-
-
 		// activate shader
+		glm::vec3 light_pos = glm::vec3(camera.Position.x, camera.Position.y - 0.02f, camera.Position.z - 0.5f);
 		lighting_shader.use();
 		lighting_shader.setVec3("light.position", light_pos);
         lighting_shader.setVec3("viewPos", camera.Position);
@@ -389,11 +409,11 @@ int main() {
 			if (buttonPressed[WOOD]) {
 				diffuseTex = tex_red_dark_diffuse;
 				specularTex = tex_red_dark_specular;
-				buttonXOffset = 0.01f;
+				buttonXOffset = 0.008f;
 			} else {
 				diffuseTex = tex_red_bright_diffuse;
 				specularTex = tex_red_bright_specular;
-				buttonXOffset = 0.03f;
+				buttonXOffset = 0.02f;
 			}
 			button1Box.diffuseTex = &diffuseTex;
 			button1Box.specularTex = &specularTex;
@@ -409,11 +429,11 @@ int main() {
 			Box* button2s[] = { &button2_brick, &button2_metal, &button2_wood };
 			float buttonXOffset;
 			if (buttonPressed[BRICK]) {
-				buttonXOffset = 0.01f;
+				buttonXOffset = 0.008f;
 			} else {
-				buttonXOffset = 0.03f;
+				buttonXOffset = 0.02f;
 			}
-			float x = rightWall.getNegativeBounds().x - 0.03f;
+			float x = rightWall.getNegativeBounds().x - 0.02f;
 			float y = camera.Position.y - 0.2f;
 			float z = brickDoor.getPositiveBounds().z + 0.5f;
 			for (int i = 1; i < 3; i++) {
@@ -422,6 +442,27 @@ int main() {
 			button2_brick.translate = glm::vec3(x - buttonXOffset, y, z);
 			for (int i = 0; i < 3; i++) {
 				button2s[i]->render(lighting_shader, VAO_box);
+			}
+		}
+
+		// Button 3's (marble graffiti door)
+		{
+			Box* button3s[] = { &button3_2, &button3_3, &button3_4 };
+			float buttonXOffset;
+			if (buttonPressed[MARBLE]) {
+				buttonXOffset = 0.008f;
+			} else {
+				buttonXOffset = 0.02f;
+			}
+			float x = rightWall.getNegativeBounds().x - 0.02f;
+			float y = camera.Position.y - 0.2f;
+			float z = marbleDoor.getPositiveBounds().z + 0.5f;
+			for (int i = 1; i < 3; i++) {
+				button3s[i]->translate = glm::vec3(x, y, z + i * 0.7f);
+			}
+			button3_2.translate = glm::vec3(x - buttonXOffset, y, z);
+			for (int i = 0; i < 3; i++) {
+				button3s[i]->render(lighting_shader, VAO_box);
 			}
 		}
 
@@ -438,19 +479,48 @@ int main() {
 		{
 			float anim = doorAnim[DoorStage::BRICK];
 			float x = (brickDoor.scale.x - 0.3f) * anim * anim;
-			float y = brickDoor.scale.y / 2 + sin(glm::radians(anim * 180.0f));
+			float y = brickDoor.scale.y / 2 + sin(glm::radians(anim * anim * 180.0f));
 			brickDoor.translate = glm::vec3(x, y, -10.0f);
 			brickDoor.angle = anim * -90.0f;
+			float deltaHeight = sin(glm::radians(anim * anim * 180)) * 2;
+			brickDoor.scale.x = woodDoor.scale.x - deltaHeight;
+			brickDoor.scale.y = woodDoor.scale.y - deltaHeight;
 		}
 		doorAnimationStep(BRICK);
 		brickDoor.render(lighting_shader, VAO_box);
 
-		// Marble door
+		// Marble graffiti door
 		{
+			float anim = doorAnim[DoorStage::MARBLE];
 			marbleDoor.translate = glm::vec3(0, marbleDoor.scale.y / 2, -15.0f);
+
+			glm::mat4 model = glm::mat4();
+			if (anim > 0.3f) {
+				model = glm::translate(
+					model,
+					glm::vec3(0.0f, anim / 3.0f * 10.0f + marbleDoor.translate.y, 0.0f)
+				);
+				model = glm::rotate(
+					model,
+					glm::radians(anim / 3.0f * 10.0f * 180.0f),
+					glm::vec3(0.0f, 0.0f, 1.0f)
+				);
+			}
+			if (anim < 0.5f) {
+				model = glm::rotate(
+					model,
+					glm::radians(anim * 2.0f * 90.0f),
+					glm::vec3(1.0f, 0.0f, 0.0f)
+				);
+				model = glm::translate(
+					model,
+					glm::vec3(0.0f, anim * 2.0f)
+				)
+			}
+			
+			doorAnimationStep(MARBLE);
+			marbleDoor.render(lighting_shader, VAO_box, model);
 		}
-		doorAnimationStep(MARBLE);
-		marbleDoor.render(lighting_shader, VAO_box);
 
 		/* Curtin Logo
 		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
@@ -467,19 +537,30 @@ int main() {
 		}*/
 
 		// Draw the light source
+		Box lampShaft(&tex_wood_diffuse, &tex_wood_specular);
+		lampShaft.translate = glm::vec3(light_pos.x, light_pos.y - 0.045f, light_pos.z);
+		lampShaft.scale = glm::vec3(0.013f, 0.08f, 0.013f);
+		lampShaft.render(lighting_shader, VAO_box);
+
+		Box lampDetailTop(&tex_wood_diffuse, &tex_wood_specular);
+		lampDetailTop.translate = glm::vec3(light_pos.x, light_pos.y - 0.01f, light_pos.z);
+		lampDetailTop.scale = glm::vec3(0.02f, 0.01, 0.02f);
+		lampDetailTop.render(lighting_shader, VAO_box);
+
+		Box lampDetailBot(&tex_wood_diffuse, &tex_wood_specular);
+		lampDetailBot.translate = glm::vec3(light_pos.x, light_pos.y - 0.08f, light_pos.z);
+		lampDetailBot.scale = glm::vec3(0.02f, 0.025, 0.02f);
+		lampDetailBot.render(lighting_shader, VAO_box);
+
 		lamp_shader.use();
+		lamp_shader.setFloat("intensity", 1.2);
 		lamp_shader.setMat4("projection", projection);
 		lamp_shader.setMat4("view", view);
-		glm::mat4 model = glm::mat4();
-		model = glm::translate(model, light_pos);
-		model = glm::scale(model, glm::vec3(0.01f)); // a smaller cube
-		lamp_shader.setMat4("model", model);
 
-		lamp_shader.setFloat("intensity", 1.2);
-
-		glBindVertexArray(VAO_light);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
+		Box lampLight(&tex_red_bright_diffuse, &tex_red_specular);
+		lampLight.translate = light_pos;
+		lampLight.scale = glm::vec3(0.01f);
+		lampLight.render(lamp_shader, VAO_light);
 
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -559,6 +640,23 @@ void process_input(GLFWwindow *window) {
 			INPUT_DELAY = INPUT_MAX;
 			button2_wood.diffuseTex = &tex_red_dark_diffuse;
 			button2_wood.specularTex = &tex_red_dark_specular;
+		} else if (checkButtonRange(button3_3)) {
+			// toggle button 3 (marble graffiti door)
+			INPUT_DELAY = INPUT_MAX;
+			buttonPressed[MARBLE] = true;
+			if (doorStage == MARBLE) {
+				doorStage = METAL;
+			}
+		} else if (checkButtonRange(button3_2)) {
+			// false button3 (1+2=2)
+			INPUT_DELAY = INPUT_MAX;
+			button3_2.diffuseTex = &tex_red_dark_diffuse;
+			button3_2.specularTex = &tex_red_dark_specular;
+		} else if (checkButtonRange(button3_4)) {
+			// false button3 (1+2=4)
+			INPUT_DELAY = INPUT_MAX;
+			button3_4.diffuseTex = &tex_red_dark_diffuse;
+			button3_4.specularTex = &tex_red_dark_specular;
 		}
 	}
 
