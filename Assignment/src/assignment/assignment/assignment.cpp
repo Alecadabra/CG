@@ -492,35 +492,25 @@ int main() {
 		// Marble graffiti door
 		{
 			float anim = doorAnim[DoorStage::MARBLE];
-			marbleDoor.translate = glm::vec3(0, marbleDoor.scale.y / 2, -15.0f);
+			glm::vec3 initialScale = glm::vec3(3.0f, 3.0f, doorZScale);
+			glm::vec3 initialTranslate = glm::vec3(0.0f, initialScale.y / 2, -15.0f);
+			marbleDoor.translate = initialTranslate;
 
-			glm::mat4 model = glm::mat4();
-			if (anim > 0.3f) {
-				model = glm::translate(
-					model,
-					glm::vec3(0.0f, anim / 3.0f * 10.0f + marbleDoor.translate.y, 0.0f)
-				);
-				model = glm::rotate(
-					model,
-					glm::radians(anim / 3.0f * 10.0f * 180.0f),
-					glm::vec3(0.0f, 0.0f, 1.0f)
-				);
+			if (anim < 0.3f) {
+				float localAnim = anim / 3.0f * 10.0f;
+				marbleDoor.scale.x = initialScale.x - (initialScale.x - 1.0f) * sin(glm::radians(localAnim * 90.0f));
+			} else if (anim < 0.6f) {
+				float localAnim = (anim - 0.3f) / 3.0f * 10.0f;
+				marbleDoor.scale.y = initialScale.y - (initialScale.y - 1.0f) * sin(glm::radians(localAnim * 90.0f));
+			} else {
+				float localAnim = (anim - 0.6f) / 3.0f * 10.0f;
+				marbleDoor.angle = localAnim * 720.0f;
+				marbleDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
+				marbleDoor.translate.z = initialScale.z - (initialScale.z) * sin(glm::radians(localAnim * 90.0f));
 			}
-			if (anim < 0.5f) {
-				model = glm::rotate(
-					model,
-					glm::radians(anim * 2.0f * 90.0f),
-					glm::vec3(1.0f, 0.0f, 0.0f)
-				);
-				model = glm::translate(
-					model,
-					glm::vec3(0.0f, anim * 2.0f)
-				)
-			}
-			
-			doorAnimationStep(MARBLE);
-			marbleDoor.render(lighting_shader, VAO_box, model);
 		}
+		doorAnimationStep(MARBLE);
+		marbleDoor.render(lighting_shader, VAO_box);
 
 		/* Curtin Logo
 		curtin.translate = glm::vec3(0.0f, 0.9f + (0.1f * sin(curtin_translate_y * PI / 180.f)), -0.35f);
