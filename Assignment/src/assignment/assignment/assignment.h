@@ -108,11 +108,11 @@ public:
 
 		glm::mat4 model = glm::translate(glm::mat4(), translate);
 
-		if (this->xAngle != 0.0f) {
-			model = glm::rotate(model, glm::radians(xAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-		}
 		if (this->yAngle != 0.0f) {
 			model = glm::rotate(model, glm::radians(yAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		if (this->xAngle != 0.0f) {
+			model = glm::rotate(model, glm::radians(xAngle), glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 		if (this->zAngle != 0.0f) {
 			model = glm::rotate(model, glm::radians(zAngle), glm::vec3(0.0f, 0.0f, 1.0f));
