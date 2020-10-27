@@ -43,28 +43,31 @@ public:
     // Camera options
     float MovementSpeed;
     float MouseSensitivity;
-    float Zoom;
+    float Fov;
 
-    float cam_height;
+    float CamHeight;
+
+    float MinFov = 45.0f;
+    float MaxFov = 90.0f;
 
     // Constructor with vectors
-    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Fov(ZOOM)
     {
         Position = position;
         WorldUp = up;
         Yaw = yaw;
         Pitch = pitch;
-        cam_height = position.y;
+        CamHeight = position.y;
         updateCameraVectors();
     }
     // Constructor with scalar values
-    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Fov(ZOOM)
     {
         Position = glm::vec3(posX, posY, posZ);
         WorldUp = glm::vec3(upX, upY, upZ);
         Yaw = yaw;
         Pitch = pitch;
-        cam_height = posY;
+        CamHeight = posY;
         updateCameraVectors();
     }
 
@@ -98,7 +101,7 @@ public:
         Position.z = med(minZ, maxZ, Position.z);
 
         // Ensure user stays at y = 0
-        Position.y = cam_height;
+        Position.y = CamHeight;
     }
 
     // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -119,8 +122,8 @@ public:
     // Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
     void ProcessMouseScroll(float yoffset)
     {
-        Zoom -= yoffset;
-        Zoom = med(45.0f, 100.0f, Zoom);
+        Fov -= yoffset;
+        Fov = med(45.0f, 100.0f, Fov);
     }
 
 private:

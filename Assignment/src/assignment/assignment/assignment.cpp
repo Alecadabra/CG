@@ -1,21 +1,29 @@
 #include "assignment.h"
 
 // textures
-unsigned int tex_wood_diffuse, tex_brickwall_diffuse, tex_metal_diffuse, tex_marble2_diffuse, tex_street_diffuse, tex_grass_diffuse, tex_marble_diffuse, tex_curtin_diffuse;
-unsigned int tex_wood_specular, tex_brickwall_specular, tex_metal_specular, tex_marble2_specular, tex_street_specular, tex_grass_specular, tex_marble_specular, tex_curtin_specular;
+unsigned int tex_wood_diffuse, tex_brickwall_diffuse, tex_metal_diffuse,
+	tex_marble2_diffuse, tex_street_diffuse, tex_grass_diffuse,
+	tex_marble_diffuse, tex_curtin_diffuse, tex_night_sky;
+unsigned int tex_wood_specular, tex_brickwall_specular, tex_metal_specular,
+	tex_marble2_specular, tex_street_specular, tex_grass_specular,
+	tex_marble_specular, tex_curtin_specular;
 
-unsigned int tex_red_dark_diffuse, tex_red_bright_diffuse, tex_red_diffuse, tex_green_diffuse, tex_blue_diffuse;
-unsigned int tex_red_dark_specular, tex_red_bright_specular, tex_red_specular, tex_green_specular, tex_blue_specular;
+unsigned int tex_red_dark_diffuse, tex_red_bright_diffuse, tex_red_diffuse,
+	tex_green_diffuse, tex_blue_diffuse;
+unsigned int tex_red_dark_specular, tex_red_bright_specular, tex_red_specular,
+	tex_green_specular, tex_blue_specular;
 
-unsigned int tex_marble2_graffiti_diffuse, tex_graffiti_2_diffuse, tex_graffiti_3_diffuse, tex_graffiti_4_diffuse;
-unsigned int tex_marble2_graffiti_specular, tex_graffiti_2_specular, tex_graffiti_3_specular, tex_graffiti_4_specular;
+unsigned int tex_marble2_graffiti_diffuse, tex_graffiti_2_diffuse,
+	tex_graffiti_3_diffuse, tex_graffiti_4_diffuse;
+unsigned int tex_marble2_graffiti_specular, tex_graffiti_2_specular,
+	tex_graffiti_3_specular, tex_graffiti_4_specular;
 
 // settings
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 
 const float NEAR_CLIP = 0.1f;
-const float FAR_CLIP = 300.0f;
+const float FAR_CLIP = 50.0f;
 
 const float cam_height = 0.8f;
 
@@ -27,6 +35,8 @@ Camera camera(glm::vec3(0.0f, cam_height, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
+float fov = 60.0f;
+float sprintAnim = 0.0f;
 
 // timing
 float delta_time = 0.0f; // time between current frame and last frame
@@ -61,8 +71,9 @@ Box roofBox(&tex_marble_diffuse, &tex_marble_specular);
 Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
 Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
 
-Camera badGuy(glm::vec3(0.0f, cam_height / 2, 5.0f));
-Box badGuyBox(&tex_grass_diffuse, &tex_grass_specular);
+Camera badGuy(glm::vec3(0.0f, cam_height, 6.0f));
+Box badGuyBox(&tex_red_bright_diffuse, &tex_red_bright_specular);
+Box badGuyBoxBack(&tex_night_sky, &tex_night_sky);
 
 // Button boxes
 Box button1Box(nullptr, nullptr);
@@ -108,8 +119,8 @@ float doorAnim[] = {
 
 void doorAnimationStep(DoorStage stage);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void computeBounds(float&, float&, float&, float&, float);
-bool checkButtonRange(Box);
+void computeBounds(float&, float&, float&, float&, float, glm::vec3);
+bool checkBoxRange(Box, float);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow *window);
@@ -132,7 +143,7 @@ int main() {
 		SCR_WIDTH, SCR_HEIGHT, "Alec OpenGL Assignment", nullptr, nullptr
 	);
 	if (window == nullptr) {
-		std::cout << "Failed to create GLFW window" << std::endl;
+		std::cout << "Failed to create GLFW window:" << std::endl;
 		glfwTerminate();
 		return EXIT_FAILURE;
 	}
@@ -222,6 +233,7 @@ int main() {
 	tex_grass_diffuse = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
 	tex_grass_specular = loadTexture(FileSystem::getPath("resources/textures/grass_specular.jpg").c_str());
 	tex_marble_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
+	//tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
 	tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble_specular.jpg").c_str());
 	tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
 	tex_curtin_specular = loadTexture(FileSystem::getPath("resources/textures/curtin_specular.jpg").c_str());
@@ -243,7 +255,7 @@ int main() {
 	tex_graffiti_3_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_3_specular.jpg").c_str());
 	tex_graffiti_4_diffuse = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_diffuse.jpg").c_str());
 	tex_graffiti_4_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_specular.jpg").c_str());
-	//tex_night_sky = loadTexture(FileSystem::getPath("resources/textures/night_sky").c_str());
+	tex_night_sky = loadTexture(FileSystem::getPath("resources/textures/night_sky").c_str());
 
 	
 	//shader configuration -----------------------------------------------------
@@ -271,8 +283,12 @@ int main() {
 	roofBox.scale = glm::vec3(3.0f, 0.001f, 30.0f);
 
 	// bad guy
-	badGuyBox.translate = glm::vec3(0.0f, 0.5f, -5.0f);
-	badGuy.MovementSpeed = SPEED / 2;
+	badGuy.MovementSpeed = SPEED / 3.0f;
+	badGuyBox.scale = glm::vec3(0.04f);
+	badGuyBox.translate = glm::vec3(0.0f, 0.5f, 5.0f);
+	badGuyBox.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
+	badGuyBoxBack.scale = glm::vec3(0.07f);
+	badGuyBoxBack.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	// doors
 	float doorZScale = 0.8f;
@@ -367,12 +383,12 @@ int main() {
 		// activate shader
 		if (lamp_carrying) {
 			float minX, maxX, minZ, maxZ, pad = hitbox_pad / 4;
-			computeBounds(minX, maxX, minZ, maxZ, pad);
 			light_pos = camera.Position;
 			light_pos.x += 0.5f * camera.Front.x + 0.1f * camera.Right.x;
-			light_pos.x = med(minX, maxX, light_pos.x);
 			light_pos.y += 0.3f * camera.Front.y - 0.15f;
 			light_pos.z += 0.5f * camera.Front.z + 0.1f * camera.Right.z;
+			computeBounds(minX, maxX, minZ, maxZ, pad, light_pos);
+			light_pos.x = med(minX, maxX, light_pos.x);
 			light_pos.z = med(minZ, maxZ, light_pos.z);
 		} else {
 			double time = glfwGetTime();
@@ -402,7 +418,7 @@ int main() {
 		glm::mat4 projection;
 		if (PERSPECTIVE_PROJECTION) {
 			projection = glm::perspective(
-				glm::radians(camera.Zoom),
+				glm::radians(camera.Fov),
 				(float)SCR_WIDTH / (float)SCR_HEIGHT,
 				NEAR_CLIP, FAR_CLIP
 			);
@@ -473,15 +489,33 @@ int main() {
 
 		// bad guy -------------------------------------------------------------
 		{
-			badGuy.Front = glm::normalize(camera.Position - badGuy.Position);
+			glm::vec3 direction = camera.Position - badGuy.Position;
+			badGuy.Front = glm::normalize(direction);
 			float minX, maxX, minZ, maxZ, pad = hitbox_pad / 8;
-			computeBounds(minX, maxX, minZ, maxZ, pad);
-			badGuy.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
-			//light_pos = camera.Position;
-			//light_pos.x += 0.5f * camera.Front.x + 0.1f * camera.Right.x;
-			//light_pos.y += 0.3f * camera.Front.y - 0.15f;
-			//light_pos.z += 0.5f * camera.Front.z + 0.1f * camera.Right.z;
+
+			badGuy.CamHeight = cam_height + sin(glfwGetTime()) / 16;
+
+			badGuyBox.translate = badGuy.Position;
+			badGuyBox.angle = glm::degrees(atan(direction.x / direction.z));
+
+			badGuyBoxBack.translate = badGuyBox.translate;
+			badGuyBoxBack.translate.x -= direction.x * 0.1f;
+			badGuyBoxBack.translate.z -= direction.z * 0.1f;
+			badGuyBoxBack.angle = glm::degrees(atan(direction.x / direction.z));
+
+
 			badGuyBox.render(lighting_shader, VAO_box);
+			badGuyBoxBack.render(lighting_shader, VAO_box);
+			
+			computeBounds(minX, maxX, minZ, maxZ, pad + badGuyBox.scale.x / 2, badGuy.Position);
+			badGuy.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
+
+
+			/*glm::mat4 model = glm::mat4();
+			model = glm::translate(model, badGuy.Position);
+			float yAngle = glm::degrees(atan(direction.x / direction.z));
+			model = glm::rotate(model, yAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::scale(model, badGuyBox.scale);*/
 		}
 
 
@@ -726,76 +760,89 @@ void process_input(GLFWwindow *window) {
 		glfwSetWindowShouldClose(window, true);
 	}
 
-	// Bounds
-	float minX, maxX, minZ, maxZ;
-	
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-		computeBounds(minX, maxX, minZ, maxZ, hitbox_pad);
-        camera.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
-	}
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-		computeBounds(minX, maxX, minZ, maxZ, hitbox_pad);
-        camera.ProcessKeyboard(BACKWARD, delta_time, minX, maxX, minZ, maxZ);
-	}
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		computeBounds(minX, maxX, minZ, maxZ, hitbox_pad);
-        camera.ProcessKeyboard(LEFT, delta_time, minX, maxX, minZ, maxZ);
-	}
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		computeBounds(minX, maxX, minZ, maxZ, hitbox_pad);
-        camera.ProcessKeyboard(RIGHT, delta_time, minX, maxX, minZ, maxZ);
-	}
-
+	// Sprinting animation
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-		camera.MovementSpeed = SPEED * 1.4f;
+		sprintAnim = min(1.0f, sprintAnim + delta_time * 3);
+	} else {
+		sprintAnim = max(0.0f, sprintAnim - delta_time * 3);
 	}
+	camera.MovementSpeed = SPEED + SPEED * sin(glm::radians(sprintAnim * 90.0f));
+	camera.Fov = 10.0f * sin(glm::radians(sprintAnim * 90.0f)) + fov;
+
+	bool w, s, a, d;
+	w = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
+	s = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
+	a = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
+	d = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+
+	if (w || s || a || d) {
+		// Bounds
+		float minX, maxX, minZ, maxZ;
+		computeBounds(minX, maxX, minZ, maxZ, hitbox_pad, camera.Position);
+
+		if (w && !s) {
+			camera.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
+		} else if (s && !w) {
+			camera.ProcessKeyboard(BACKWARD, delta_time, minX, maxX, minZ, maxZ);
+		}
+
+		if (a && !d) {
+			camera.ProcessKeyboard(LEFT, delta_time, minX, maxX, minZ, maxZ);
+		} else if (d && !a) {
+			camera.ProcessKeyboard(RIGHT, delta_time, minX, maxX, minZ, maxZ);
+		}
+	}
+	
+
+	
 
 	// Buttons
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && INPUT_DELAY == 0) {
-		if (checkButtonRange(button1Box)) {
+		if (checkBoxRange(button1Box, button_range)) {
 			//toggle button 1 (wood door)
 			INPUT_DELAY = INPUT_MAX;
 			buttonPressed[WOOD] = true;
 			if (doorStage == WOOD) {
 				doorStage = BRICK;
 			}
-		} else if (checkButtonRange(button2_brick)) {
+		} else if (checkBoxRange(button2_brick, button_range)) {
 			//toggle button 2 (brick door)
 			INPUT_DELAY = INPUT_MAX;
 			buttonPressed[BRICK] = true;
 			if (doorStage == BRICK) {
 				doorStage = MARBLE;
 			}
-		} else if (checkButtonRange(button2_metal)) {
+		} else if (checkBoxRange(button2_metal, button_range)) {
 			// false button2 (metal)
 			INPUT_DELAY = INPUT_MAX;
 			button2_metal.diffuseTex = &tex_red_dark_diffuse;
 			button2_metal.specularTex = &tex_red_dark_specular;
-		} else if (checkButtonRange(button2_wood)) {
+		} else if (checkBoxRange(button2_wood, button_range)) {
 			// false button2 (wood)
 			INPUT_DELAY = INPUT_MAX;
 			button2_wood.diffuseTex = &tex_red_dark_diffuse;
 			button2_wood.specularTex = &tex_red_dark_specular;
-		} else if (checkButtonRange(button3_3)) {
+		} else if (checkBoxRange(button3_3, button_range)) {
 			// toggle button 3 (marble graffiti door)
 			INPUT_DELAY = INPUT_MAX;
 			buttonPressed[MARBLE] = true;
 			if (doorStage == MARBLE) {
 				doorStage = METAL;
 			}
-		} else if (checkButtonRange(button3_2)) {
+		} else if (checkBoxRange(button3_2, button_range)) {
 			// false button3 (1+2=2)
 			INPUT_DELAY = INPUT_MAX;
 			button3_2.diffuseTex = &tex_red_dark_diffuse;
 			button3_2.specularTex = &tex_red_dark_specular;
-		} else if (checkButtonRange(button3_4)) {
+		} else if (checkBoxRange(button3_4, button_range)) {
 			// false button3 (1+2=4)
 			INPUT_DELAY = INPUT_MAX;
 			button3_4.diffuseTex = &tex_red_dark_diffuse;
 			button3_4.specularTex = &tex_red_dark_specular;
 		} else if (
-			checkButtonRange(button4_1) || checkButtonRange(button4_2)
-			|| checkButtonRange(button4_3)
+			checkBoxRange(button4_1, button_range)
+			|| checkBoxRange(button4_2, button_range)
+			|| checkBoxRange(button4_3, button_range)
 		) {
 			// toggle button 4's (all of them) (metal door)
 			INPUT_DELAY = INPUT_MAX;
@@ -838,7 +885,7 @@ void process_input(GLFWwindow *window) {
 }
 
 
-void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad) {
+void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad, glm::vec3 pos) {
 	// Start with bounds of static walls
 	minX = leftWall.getPositiveBounds().x + pad;
 	maxX = rightWall.getNegativeBounds().x - pad;
@@ -849,27 +896,27 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad
 		glm::vec3 wallMin = doorBoxes[i]->getNegativeBounds();
 		glm::vec3 wallMax = doorBoxes[i]->getPositiveBounds();
 
-		if (wallMin.x < camera.Position.x && camera.Position.x < wallMax.x) {
+		if (wallMin.x < pos.x && pos.x < wallMax.x) {
 			// Make sure camera is within the x range of the wall
 
-			if (camera.Position.z > wallMax.z && camera.Position.y > wallMin.y) {
+			if (pos.z > wallMax.z && pos.y > wallMin.y) {
 				// Try to walk through from +ve z side
 				minZ = max(minZ, wallMax.z + pad);
 			}
-			if (camera.Position.z < wallMin.z && camera.Position.y > wallMin.y) {
+			if (pos.z < wallMin.z && pos.y > wallMin.y) {
 				// Try to walk through from -ve z side
 				maxZ = min(maxZ, wallMin.z - pad);
 			}
 		}
 
-		if (wallMin.z < camera.Position.z && camera.Position.z < wallMax.z) {
+		if (wallMin.z < pos.z && pos.z < wallMax.z) {
 			// Player has a wall to their left/right (z axis)
 
-			if (camera.Position.x > wallMax.x && camera.Position.y > wallMin.y) {
+			if (pos.x > wallMax.x && pos.y > wallMin.y) {
 				// Try to walk through from +ve z side
 				minX = max(minX, wallMax.x + pad);
 			}
-			if (camera.Position.z < wallMin.x && camera.Position.y > wallMin.y) {
+			if (pos.z < wallMin.x && pos.y > wallMin.y) {
 				// Try to walk through from -ve z side
 				maxX = min(maxX, wallMin.x - pad);
 			}
@@ -877,8 +924,8 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad
 	}
 }
 
-bool checkButtonRange(Box buttonBox) {
-	return glm::length(camera.Position - buttonBox.translate) <= button_range;
+bool checkBoxRange(Box buttonBox, float range = button_range) {
+	return glm::length(camera.Position - buttonBox.translate) <= range;
 }
 
 
@@ -951,4 +998,5 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 // ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     camera.ProcessMouseScroll(yoffset);
+	fov = camera.Fov;
 }

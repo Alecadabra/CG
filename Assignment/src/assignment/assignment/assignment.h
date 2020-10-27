@@ -94,13 +94,6 @@ public:
 		this->translate = translate;
 	}
 
-	void render(Shader shader, unsigned int vao, glm::mat4 model = glm::mat4()) {
-		bind(vao);
-		activateTextures();
-		shader.setMat4("model", transform(model));
-		draw();
-	}
-
 	void activateTextures() {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, *diffuseTex);
@@ -108,7 +101,7 @@ public:
 		glBindTexture(GL_TEXTURE_2D, *specularTex);
 	}
 
-	glm::mat4 transform(glm::mat4 inModel) {
+	glm::mat4 transform() {
 
 		glm::mat4 model = glm::translate(glm::mat4(), translate);
 
@@ -117,8 +110,6 @@ public:
 		}
 
 		model = glm::scale(model, scale);
-
-		model *= inModel;
 		
 		return model;
 	}
@@ -129,6 +120,19 @@ public:
 
 	void draw() {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+
+	void render(Shader shader, unsigned int vao, glm::mat4* model = nullptr) {
+		glm::mat4 localModel;
+		if (model == nullptr) {
+			localModel = transform();
+		} else {
+			localModel = *model;
+		}
+		bind(vao);
+		activateTextures();
+		shader.setMat4("model", localModel);
+		draw();
 	}
 
 	glm::vec3 getNegativeBounds() {
