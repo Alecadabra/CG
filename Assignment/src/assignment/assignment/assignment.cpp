@@ -286,16 +286,13 @@ int main() {
 	badGuy.MovementSpeed = SPEED / 3.0f;
 	badGuyBox.scale = glm::vec3(0.04f);
 	badGuyBox.translate = glm::vec3(0.0f, 0.5f, 5.0f);
-	badGuyBox.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
 	badGuyBoxBack.scale = glm::vec3(0.07f);
-	badGuyBoxBack.rotate = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	// doors
 	float doorZScale = 0.8f;
 	woodDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 
 	brickDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
-	brickDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
 
 	marbleDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 
@@ -342,8 +339,7 @@ int main() {
 		Box* buttons[] = { &button3_2, &button3_3, &button3_4 };
 		for (int i = 0; i < 3; i++) {
 			buttons[i]->scale = glm::vec3(buttonDimenScale);
-			buttons[i]->angle = 90.0f;
-			buttons[i]->rotate = glm::vec3(1.0f, 0.0f, 0.0f);
+			buttons[i]->xAngle = 90.0f;
 		}
 	}
 
@@ -351,8 +347,7 @@ int main() {
 		Box* buttons[] = { &button4_1, &button4_2, &button4_3 };
 		for (int i = 0; i < 3; i++) {
 			buttons[i]->scale = glm::vec3(buttonDimenScale);
-			buttons[i]->angle = 90.0f;
-			buttons[i]->rotate = glm::vec3(1.0f, 0.0f, 0.0f);
+			buttons[i]->xAngle = 90.0f;
 		}
 	}
 
@@ -496,12 +491,12 @@ int main() {
 			badGuy.CamHeight = cam_height + sin(glfwGetTime()) / 16;
 
 			badGuyBox.translate = badGuy.Position;
-			badGuyBox.angle = glm::degrees(atan(direction.x / direction.z));
+			badGuyBox.yAngle = glm::degrees(atan(direction.x / direction.z));
 
 			badGuyBoxBack.translate = badGuyBox.translate;
 			badGuyBoxBack.translate.x -= direction.x * 0.1f;
 			badGuyBoxBack.translate.z -= direction.z * 0.1f;
-			badGuyBoxBack.angle = glm::degrees(atan(direction.x / direction.z));
+			badGuyBoxBack.yAngle = glm::degrees(atan(direction.x / direction.z));
 
 
 			badGuyBox.render(lighting_shader, VAO_box);
@@ -623,7 +618,7 @@ int main() {
 			float x = (brickDoor.scale.x - 0.3f) * anim * anim;
 			float y = brickDoor.scale.y / 2 + sin(glm::radians(anim * anim * 180.0f));
 			brickDoor.translate = glm::vec3(x, y, -10.0f);
-			brickDoor.angle = anim * -90.0f;
+			brickDoor.zAngle = anim * -90.0f;
 			float deltaHeight = sin(glm::radians(anim * anim * 180)) * 2;
 			brickDoor.scale.x = woodDoor.scale.x - deltaHeight;
 			brickDoor.scale.y = woodDoor.scale.y - deltaHeight;
@@ -646,8 +641,7 @@ int main() {
 				marbleDoor.scale.y = initialScale.y - (initialScale.y - 1.0f) * sin(glm::radians(localAnim * 90.0f));
 			} else {
 				float localAnim = (anim - 0.6f) / 3.0f * 10.0f;
-				marbleDoor.angle = localAnim * 720.0f;
-				marbleDoor.rotate = glm::vec3(0.0f, 0.0f, 1.0f);
+				marbleDoor.zAngle = localAnim * 720.0f;
 				marbleDoor.translate.z = initialTranslate.z + initialTranslate.z * 1.5f * sin(glm::radians(localAnim * 45.0f));
 			}
 		}
@@ -687,33 +681,29 @@ int main() {
 
 
 		// Draw the light source
-		glm::vec3 lampRotate = glm::vec3(0.0f, 1.0f, 0.0f);
-		float lampAngle;
+		float lampYAngle;
 		if (lamp_carrying) {
-			lampAngle = -camera.Yaw;
+			lampYAngle = -camera.Yaw;
 		} else {
-			lampAngle = sin(glfwGetTime()) * 90.0f;
+			lampYAngle = sin(glfwGetTime()) * 90.0f;
 		}
 
 		Box lampShaft(&tex_wood_diffuse, &tex_wood_specular);
 		lampShaft.translate = glm::vec3(light_pos.x, light_pos.y - 0.045f, light_pos.z);
 		lampShaft.scale = glm::vec3(0.013f, 0.08f, 0.013f);
-		lampShaft.angle = lampAngle;
-		lampShaft.rotate = lampRotate;
+		lampShaft.yAngle = lampYAngle;
 		lampShaft.render(lighting_shader, VAO_box);
 
 		Box lampDetailTop(&tex_wood_diffuse, &tex_wood_specular);
 		lampDetailTop.translate = glm::vec3(light_pos.x, light_pos.y - 0.01f, light_pos.z);
 		lampDetailTop.scale = glm::vec3(0.02f, 0.01, 0.02f);
-		lampDetailTop.angle = lampAngle;
-		lampDetailTop.rotate = lampRotate;
+		lampDetailTop.yAngle = lampYAngle;
 		lampDetailTop.render(lighting_shader, VAO_box);
 
 		Box lampDetailBot(&tex_wood_diffuse, &tex_wood_specular);
 		lampDetailBot.translate = glm::vec3(light_pos.x, light_pos.y - 0.08f, light_pos.z);
 		lampDetailBot.scale = glm::vec3(0.02f, 0.025, 0.02f);
-		lampDetailBot.angle = lampAngle;
-		lampDetailBot.rotate = lampRotate;
+		lampDetailBot.yAngle = lampYAngle;
 		lampDetailBot.render(lighting_shader, VAO_box);
 
 		lamp_shader.use();
@@ -724,8 +714,7 @@ int main() {
 		Box lampLight(&tex_red_bright_diffuse, &tex_red_specular);
 		lampLight.translate = light_pos;
 		lampLight.scale = glm::vec3(0.01f);
-		lampLight.angle = lampAngle;
-		lampLight.rotate = lampRotate;
+		lampLight.yAngle = lampYAngle;
 		lampLight.render(lamp_shader, VAO_light);
 
 

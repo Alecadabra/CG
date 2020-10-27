@@ -72,15 +72,17 @@ public:
 	unsigned int* specularTex;
 
 	glm::vec3 scale;
-	glm::vec3 rotate;
+	//glm::vec3 rotate;
 	glm::vec3 translate;
 
-	float angle;
+	float xAngle, yAngle, zAngle;
 
 	Box(
 		unsigned int* diffuseTex = nullptr,
 		unsigned int* specularTex = nullptr,
-		float angle = 0.0f,
+		float xAngle = 0.0f,
+		float yAngle = 0.0f,
+		float zAngle = 0.0f,
 		glm::vec3 scale = glm::vec3(),
 		glm::vec3 rotate = glm::vec3(),
 		glm::vec3 translate = glm::vec3()
@@ -88,9 +90,10 @@ public:
 		this->diffuseTex = diffuseTex;
 		this->specularTex = specularTex;
 
-		this->angle = angle;
+		this->xAngle = xAngle;
+		this->yAngle = yAngle;
+		this->zAngle = zAngle;
 		this->scale = scale;
-		this->rotate = rotate;
 		this->translate = translate;
 	}
 
@@ -105,8 +108,14 @@ public:
 
 		glm::mat4 model = glm::translate(glm::mat4(), translate);
 
-		if (this->angle != 0.0f) {
-			model = glm::rotate(model, glm::radians(angle), rotate);
+		if (this->xAngle != 0.0f) {
+			model = glm::rotate(model, glm::radians(xAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		}
+		if (this->yAngle != 0.0f) {
+			model = glm::rotate(model, glm::radians(yAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		if (this->zAngle != 0.0f) {
+			model = glm::rotate(model, glm::radians(zAngle), glm::vec3(0.0f, 0.0f, 1.0f));
 		}
 
 		model = glm::scale(model, scale);
