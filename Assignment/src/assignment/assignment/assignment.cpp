@@ -127,8 +127,8 @@ Box win_square(&tex_green_diffuse, &tex_metal_specular, true);
 
 // Bad guy
 Box bad_guy_box_eye(&tex_red_bright_diffuse, &tex_marble_specular);
-Box bad_guy_box_back(&tex_marble_diffuse, &tex_green_specular);
-Box bad_guy_box_stem(&tex_marble_diffuse, &tex_green_specular);
+Box bad_guy_box_back(&tex_marble2_diffuse, &tex_marble2_specular);
+Box bad_guy_box_stem(&tex_marble2_diffuse, &tex_marble2_specular);
 
 // Button boxes
 Box button_1_box(&tex_green_diffuse, &tex_metal_specular);
@@ -273,8 +273,8 @@ int main() {
 	tex_brickwall_specular = loadTexture(FileSystem::getPath("resources/textures/brickwall_specular.jpg").c_str());
 	tex_metal_diffuse = loadTexture(FileSystem::getPath("resources/textures/metal.png").c_str());
 	tex_metal_specular = loadTexture(FileSystem::getPath("resources/textures/metal_specular.png").c_str());
-	//tex_marble2_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble2.jpg").c_str());
-	//tex_marble2_specular = loadTexture(FileSystem::getPath("resources/textures/marble2_specular.jpg").c_str());
+	tex_marble2_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble2.jpg").c_str());
+	tex_marble2_specular = loadTexture(FileSystem::getPath("resources/textures/marble2_specular.jpg").c_str());
 	tex_street_diffuse = loadTexture(FileSystem::getPath("resources/textures/street.png").c_str());
 	tex_street_specular = loadTexture(FileSystem::getPath("resources/textures/street_specular.png").c_str());
 	tex_grass_diffuse = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
@@ -321,7 +321,7 @@ int main() {
 		float length = 34.0f;
 		float zOffset = -8.0f;
 		float dimen = 3.0f;
-		float width = 0.0001f;
+		float width = 0.001f;
 
 		// right wall
 		right_wall.translate = glm::vec3(dimen / 2, dimen / 2, zOffset);
@@ -466,10 +466,10 @@ int main() {
 		if (lamp_carrying) {
 			float minX, maxX, minZ, maxZ, pad = HITBOX_PAD / 2;
 			light_pos = camera.Position;
+			computeBounds(minX, maxX, minZ, maxZ, pad, light_pos);
 			light_pos.x += 0.5f * camera.Front.x + 0.1f * camera.Right.x;
 			light_pos.y += 0.3f * camera.Front.y - 0.15f;
 			light_pos.z += 0.5f * camera.Front.z + 0.1f * camera.Right.z;
-			computeBounds(minX, maxX, minZ, maxZ, pad, light_pos);
 			light_pos.x = med(minX, maxX, light_pos.x);
 			light_pos.z = med(minZ, maxZ, light_pos.z);
 		} else {
@@ -493,7 +493,7 @@ int main() {
 		lighting_shader.setVec3("light.specular", glm::vec3(brightness));
 
 		// material properties
-        lighting_shader.setFloat("material.shininess", 65.0f);
+        lighting_shader.setFloat("material.shininess", 15.0f);
 		lighting_shader.setFloat("radius", light_radius);
 
 		// pass projection matrix to shader
