@@ -47,8 +47,8 @@ Camera badGuy(glm::vec3(0.0f));
 float sprintAnim;
 
 // timing
-float delta_time; // time between current frame and last frame
-float last_frame ;
+float delta_time = 0.0f; // time between current frame and last frame
+float last_frame = 0.0f;
 
 int input_delay;
 
@@ -66,18 +66,20 @@ bool PERSPECTIVE_PROJECTION;
 bool EXTRA_BRIGHT;
 
 // Boxes
-Box floorBox(&tex_marble_diffuse, &tex_marble_specular);
-Box roofBox(&tex_marble_diffuse, &tex_marble_specular);
-Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
-Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
+Box floorBox(&tex_marble_diffuse, &tex_marble_specular, true);
+Box roofBox(&tex_marble_diffuse, &tex_marble_specular, true);
+Box rightWall(&tex_marble_diffuse, &tex_marble_specular, true);
+Box leftWall(&tex_marble_diffuse, &tex_marble_specular, true);
+Box backWall(&tex_marble_diffuse, &tex_marble_specular, true);
+Box frontWall(&tex_marble_diffuse, &tex_marble_specular, true);
+Box winSquare(&tex_green_diffuse, &tex_metal_specular, true);
 
 Box badGuyBox(&tex_red_bright_diffuse, &tex_marble_specular);
 Box badGuyBoxBack(&tex_marble_diffuse, &tex_green_specular);
 Box badGuyVert(&tex_marble_diffuse, &tex_green_specular);
-//Box badGuyHor(&tex_marble_diffuse, &tex_green_specular);
 
 // Button boxes
-Box button1Box(nullptr, nullptr);
+Box button1Box(&tex_green_diffuse, &tex_metal_specular);
 Box button2_brick(&tex_brickwall_diffuse, &tex_brickwall_specular);
 Box button2_metal(&tex_metal_diffuse, &tex_metal_specular);
 Box button2_wood(&tex_wood_diffuse, &tex_wood_specular);
@@ -134,6 +136,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow *window);
 unsigned int loadTexture(char const * path);
+void checkWinCond();
 
 int main() {
 	// glfw: initialize and configure
@@ -248,15 +251,15 @@ int main() {
 	tex_marble_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
 	//tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
 	tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble_specular.jpg").c_str());
-	tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
-	tex_curtin_specular = loadTexture(FileSystem::getPath("resources/textures/curtin_specular.jpg").c_str());
+	//tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
+	//tex_curtin_specular = loadTexture(FileSystem::getPath("resources/textures/curtin_specular.jpg").c_str());
 	tex_red_dark_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_dark.jpg").c_str());
 	tex_red_dark_specular = loadTexture(FileSystem::getPath("resources/textures/red_dark_specular.jpg").c_str());
 	tex_red_bright_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_bright.jpg").c_str());
 	tex_red_bright_specular = loadTexture(FileSystem::getPath("resources/textures/red_bright_specular.jpg").c_str());
 	//tex_red_diffuse = loadTexture(FileSystem::getPath("resources/textures/red.jpg").c_str());
 	//tex_red_specular = loadTexture(FileSystem::getPath("resources/textures/red_specular.jpg").c_str());
-	//tex_green_diffuse = loadTexture(FileSystem::getPath("resources/textures/green.jpg").c_str());
+	tex_green_diffuse = loadTexture(FileSystem::getPath("resources/textures/green.jpg").c_str());
 	//tex_green_specular = loadTexture(FileSystem::getPath("resources/textures/green_specular.jpg").c_str());
 	//tex_blue_diffuse = loadTexture(FileSystem::getPath("resources/textures/blue.jpg").c_str());
 	//tex_blue_specular = loadTexture(FileSystem::getPath("resources/textures/blue_specular.jpg").c_str());
@@ -282,21 +285,43 @@ int main() {
 
 	// set static transformations ----------------------------------------------
 
-	// right wall
-	rightWall.translate = glm::vec3(1.5f, 1.5f, -8.0f);
-	rightWall.scale = glm::vec3(0.001f, 3.0f, 30.0f);
+	// Walls
+	{
+		float length = 34.0f;
+		float zOffset = -8.0f;
+		float dimen = 3.0f;
+		float width = 0.0001f;
 
-	// left wall
-	leftWall.translate = glm::vec3(-1.5f, 1.5f, -8.0f);
-	leftWall.scale = glm::vec3(0.001f, 3.0f, 30.0f);
+		// right wall
+		rightWall.translate = glm::vec3(dimen / 2, dimen / 2, zOffset);
+		rightWall.scale = glm::vec3(width, dimen, length);
 
-	// floor
-	floorBox.translate = glm::vec3(0.0f, 0.0f, -8.0f);
-	floorBox.scale = glm::vec3(3.0f, 0.001f, 30.0f);
+		// left wall
+		leftWall.translate = glm::vec3(-dimen / 2, dimen / 2, zOffset);
+		leftWall.scale = glm::vec3(width, dimen, length);
 
-	// roof
-	roofBox.translate = glm::vec3(0.0f, 3.0f, -8.0f);
-	roofBox.scale = glm::vec3(3.0f, 0.001f, 30.0f);
+		// floor
+		floorBox.translate = glm::vec3(0.0f, 0.0f, zOffset);
+		floorBox.scale = glm::vec3(dimen, width, length);
+
+		// roof
+		roofBox.translate = glm::vec3(0.0f, dimen, zOffset);
+		roofBox.scale = glm::vec3(dimen, width, length);
+
+		// back wall
+		backWall.translate = glm::vec3(0.0f, dimen / 2, length / 2 + zOffset);
+		backWall.scale = glm::vec3(dimen, dimen, width);
+
+		// front wall
+		frontWall.translate = glm::vec3(0.0f, dimen / 2, -length / 2 + zOffset);
+		frontWall.scale = glm::vec3(dimen, dimen, width);
+
+		// win square
+		winSquare.translate = glm::vec3(0.0f, 0.025f, -length / 2 + zOffset + dimen);
+		winSquare.scale = glm::vec3(dimen / 1.5f, 0.05f, dimen / 1.5f);
+	}
+
+	
 
 	// bad guy
 	{
@@ -308,8 +333,6 @@ int main() {
 		badGuyBoxBack.scale = glm::vec3(0.18f);
 
 		badGuyVert.scale = glm::vec3(0.05f, 2.0f, 0.05f);
-
-		//badGuyHor.scale = glm::vec3(4.0f, 0.05f, 0.05f);
 	}
 
 	// doors
@@ -464,6 +487,9 @@ int main() {
 		roofBox.render(lighting_shader, VAO_box);
 		rightWall.render(lighting_shader, VAO_box);
 		leftWall.render(lighting_shader, VAO_box);
+		backWall.render(lighting_shader, VAO_box);
+		frontWall.render(lighting_shader, VAO_box);
+		winSquare.render(lighting_shader, VAO_box);
 
 
 		// doors ---------------------------------------------------------------
@@ -546,19 +572,12 @@ int main() {
 
 		// Button 1 (wood door)
 		{
-			unsigned int diffuseTex, specularTex;
 			float buttonXOffset;
 			if (buttonPressed[WOOD]) {
-				diffuseTex = tex_red_dark_diffuse;
-				specularTex = tex_red_dark_specular;
-				buttonXOffset = 0.008f;
+				buttonXOffset = -0.04f;
 			} else {
-				diffuseTex = tex_red_bright_diffuse;
-				specularTex = tex_red_bright_specular;
 				buttonXOffset = 0.02f;
 			}
-			button1Box.diffuseTex = &diffuseTex;
-			button1Box.specularTex = &specularTex;
 			float x = rightWall.getNegativeBounds().x - buttonXOffset;
 			float y = camera.Position.y - 0.2f;
 			float z = woodDoor.getPositiveBounds().z + 0.5f;
@@ -571,7 +590,7 @@ int main() {
 			Box* button2s[] = { &button2_brick, &button2_metal, &button2_wood };
 			float buttonXOffset;
 			if (buttonPressed[BRICK]) {
-				buttonXOffset = 0.008f;
+				buttonXOffset = -0.04f;
 			} else {
 				buttonXOffset = 0.02f;
 			}
@@ -595,7 +614,7 @@ int main() {
 			Box* button3s[] = { &button3_2, &button3_3, &button3_4 };
 			float buttonXOffset;
 			if (buttonPressed[MARBLE]) {
-				buttonXOffset = 0.008f;
+				buttonXOffset = -0.04f;
 			} else {
 				buttonXOffset = 0.02f;
 			}
@@ -616,7 +635,7 @@ int main() {
 			Box* button4s[] = { &button4_1, &button4_2, &button4_3 };
 			float buttonXOffset;
 			if (buttonPressed[METAL]) {
-				buttonXOffset = 0.008f;
+				buttonXOffset = -0.04f;
 			} else {
 				buttonXOffset = 0.02f;
 			}
@@ -631,10 +650,9 @@ int main() {
 
 
 		// bad guy -------------------------------------------------------------
-		{
+		if (gameStage != WON) {
 			glm::vec3 direction = glm::normalize(camera.Position - badGuy.Position);
-			badGuy.Front = glm::normalize(direction);
-			float minX, maxX, minZ, maxZ, pad = HITBOX_PAD / 8;
+			badGuy.Front = direction;
 
 			badGuy.CamHeight = cam_height + sin(glfwGetTime() * 2.5f) / 7.0f;
 
@@ -658,28 +676,36 @@ int main() {
 			badGuyBox.render(lighting_shader, VAO_box);
 			badGuyBoxBack.render(lighting_shader, VAO_box);
 			badGuyVert.render(lighting_shader, VAO_box);
-			//badGuyHor.render(lighting_shader, VAO_box);
-			
-			computeBounds(minX, maxX, minZ, maxZ, pad + badGuyBox.scale.x / 2, badGuy.Position);
+
+			float minX, maxX, minZ, maxZ;
+			float pad = (HITBOX_PAD / 8) + (badGuyBox.scale.x / 2) * 0;
+			computeBounds(minX, maxX, minZ, maxZ, pad, badGuy.Position);
 			badGuy.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
-
-
-			/*glm::mat4 model = glm::mat4();
-			model = glm::translate(model, badGuy.Position);
-			float yAngle = glm::degrees(atan(direction.x / direction.z));
-			model = glm::rotate(model, yAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::scale(model, badGuyBox.scale);*/
-
-			// Check lose condition
-			if (checkBoxRange(badGuyBox, BTN_RANGE / 4)) {
-				gameStage = LOST;
-			}
+		
+			
 		}
 
+		
+		if (gameStage == PLAYING) {
+			// Check win/lose conditions
+			if (checkBoxRange(badGuyBox, BTN_RANGE / 4)) {
+				gameStage = LOST;
 
-		// death/win screen ----------------------------------------------------
+			} else {
+				glm::vec3 minBound = winSquare.getNegativeBounds();
+				glm::vec3 maxBound = winSquare.getPositiveBounds();
 
-		if (gameStage == LOST) {
+				if (camera.Position.x > minBound.x &&
+					camera.Position.x < maxBound.x &&
+					camera.Position.z > minBound.z &&
+					camera.Position.z < maxBound.z
+				) {
+					gameStage = WON;
+				}
+			}
+
+		} else if (gameStage == LOST) {
+			// death screen
 			camera.CamHeight = 0.3f;
 			camera.Pitch = 0.0f;
 			loseBox.translate = camera.Position;
@@ -689,45 +715,57 @@ int main() {
 			loseBox.yAngle = -camera.Yaw;
 			loseBox.xAngle = 90.0f;
 			loseBox.render(lighting_shader, VAO_box);
+
+		} else if (gameStage == WON) {
+			// win screen
+			winBox.translate = camera.Position;
+			winBox.translate.x += 1.0f * camera.Front.x;
+			winBox.translate.y += camera.Front.y;
+			winBox.translate.z += 1.0f * camera.Front.z;
+			winBox.yAngle = -camera.Yaw;
+			winBox.xAngle = 90.0f;
+			winBox.render(lighting_shader, VAO_box);
 		}
 
 
 		// Draw the light source -----------------------------------------------
-		float lampYAngle;
-		if (lamp_carrying) {
-			lampYAngle = -camera.Yaw;
-		} else {
-			lampYAngle = sin(glfwGetTime()) * 90.0f;
+		{
+			float lampYAngle;
+			if (lamp_carrying) {
+				lampYAngle = -camera.Yaw;
+			} else {
+				lampYAngle = sin(glfwGetTime()) * 90.0f;
+			}
+
+			Box lampShaft(&tex_wood_diffuse, &tex_wood_specular);
+			lampShaft.translate = glm::vec3(light_pos.x, light_pos.y - 0.045f, light_pos.z);
+			lampShaft.scale = glm::vec3(0.013f, 0.08f, 0.013f);
+			lampShaft.yAngle = lampYAngle;
+			lampShaft.render(lighting_shader, VAO_box);
+
+			Box lampDetailTop(&tex_wood_diffuse, &tex_wood_specular);
+			lampDetailTop.translate = glm::vec3(light_pos.x, light_pos.y - 0.01f, light_pos.z);
+			lampDetailTop.scale = glm::vec3(0.02f, 0.01, 0.02f);
+			lampDetailTop.yAngle = lampYAngle;
+			lampDetailTop.render(lighting_shader, VAO_box);
+
+			Box lampDetailBot(&tex_wood_diffuse, &tex_wood_specular);
+			lampDetailBot.translate = glm::vec3(light_pos.x, light_pos.y - 0.08f, light_pos.z);
+			lampDetailBot.scale = glm::vec3(0.02f, 0.025, 0.02f);
+			lampDetailBot.yAngle = lampYAngle;
+			lampDetailBot.render(lighting_shader, VAO_box);
+
+			lamp_shader.use();
+			lamp_shader.setFloat("intensity", 1.2);
+			lamp_shader.setMat4("projection", projection);
+			lamp_shader.setMat4("view", view);
+
+			Box lampLight(&tex_red_bright_diffuse, &tex_red_specular);
+			lampLight.translate = light_pos;
+			lampLight.scale = glm::vec3(0.01f);
+			lampLight.yAngle = lampYAngle;
+			lampLight.render(lamp_shader, VAO_light);
 		}
-
-		Box lampShaft(&tex_wood_diffuse, &tex_wood_specular);
-		lampShaft.translate = glm::vec3(light_pos.x, light_pos.y - 0.045f, light_pos.z);
-		lampShaft.scale = glm::vec3(0.013f, 0.08f, 0.013f);
-		lampShaft.yAngle = lampYAngle;
-		lampShaft.render(lighting_shader, VAO_box);
-
-		Box lampDetailTop(&tex_wood_diffuse, &tex_wood_specular);
-		lampDetailTop.translate = glm::vec3(light_pos.x, light_pos.y - 0.01f, light_pos.z);
-		lampDetailTop.scale = glm::vec3(0.02f, 0.01, 0.02f);
-		lampDetailTop.yAngle = lampYAngle;
-		lampDetailTop.render(lighting_shader, VAO_box);
-
-		Box lampDetailBot(&tex_wood_diffuse, &tex_wood_specular);
-		lampDetailBot.translate = glm::vec3(light_pos.x, light_pos.y - 0.08f, light_pos.z);
-		lampDetailBot.scale = glm::vec3(0.02f, 0.025, 0.02f);
-		lampDetailBot.yAngle = lampYAngle;
-		lampDetailBot.render(lighting_shader, VAO_box);
-
-		lamp_shader.use();
-		lamp_shader.setFloat("intensity", 1.2);
-		lamp_shader.setMat4("projection", projection);
-		lamp_shader.setMat4("view", view);
-
-		Box lampLight(&tex_red_bright_diffuse, &tex_red_specular);
-		lampLight.translate = light_pos;
-		lampLight.scale = glm::vec3(0.01f);
-		lampLight.yAngle = lampYAngle;
-		lampLight.render(lamp_shader, VAO_light);
 
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -891,15 +929,14 @@ void initialiseState() {
 	lastY = SCR_HEIGHT / 2.0f;
 	firstMouse = true;
 	fov = 60.0f;
+	camera.Yaw = -90.0f;
+	camera.Pitch = 0.0f;
+	camera.updateCameraVectors();
 
 	badGuy.CamHeight = cam_height;
-	badGuy.Position = glm::vec3(0.0f, cam_height, 8.0f);
+	badGuy.Position = glm::vec3(0.0f, cam_height, 9.0f);
 
 	sprintAnim = 0.0f;
-
-	// timing
-	delta_time = 0.0f; // time between current frame and last frame
-	last_frame = 0.0f;
 
 	input_delay = 0;
 

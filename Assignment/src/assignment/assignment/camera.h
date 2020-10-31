@@ -126,7 +126,6 @@ public:
         Fov = med(45.0f, 100.0f, Fov);
     }
 
-private:
     // Calculates the front vector from the Camera's (updated) Euler Angles
     void updateCameraVectors()
     {

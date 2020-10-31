@@ -77,24 +77,26 @@ public:
 
 	float xAngle, yAngle, zAngle;
 
+	// Optimization for boxes that do not change transformation
+	bool staticTransformation;
+	bool staticModelCalculated = false;
+	glm::mat4 staticModel; // Lazily calculated on render
+
 	Box(
 		unsigned int* diffuseTex = nullptr,
 		unsigned int* specularTex = nullptr,
-		float xAngle = 0.0f,
-		float yAngle = 0.0f,
-		float zAngle = 0.0f,
-		glm::vec3 scale = glm::vec3(),
-		glm::vec3 rotate = glm::vec3(),
-		glm::vec3 translate = glm::vec3()
+		bool staticTransformation = false
 	) {
 		this->diffuseTex = diffuseTex;
 		this->specularTex = specularTex;
 
-		this->xAngle = xAngle;
-		this->yAngle = yAngle;
-		this->zAngle = zAngle;
-		this->scale = scale;
-		this->translate = translate;
+		this->xAngle = 0.0f;
+		this->yAngle = 0.0f;
+		this->zAngle = 0.0f;
+		this->scale = glm::vec3();
+		this->translate = glm::vec3();
+
+		this->staticTransformation = staticTransformation;
 	}
 
 	void activateTextures() {
@@ -132,12 +134,24 @@ public:
 	}
 
 	void render(Shader shader, unsigned int vao, glm::mat4* model = nullptr) {
-		glm::mat4 localModel;
-		if (model == nullptr) {
-			localModel = transform();
-		} else {
-			localModel = *model;
+		if (staticTransformation && !staticModelCalculated) {
+			// Calulcate model (once only)
+			this->staticModel = transform();
+			this->staticModelCalculated = true;
 		}
+
+		glm::mat4 localModel;
+		if (model != nullptr) {
+			// Model is specified
+			localModel = *model;
+		} else if (staticTransformation) {
+			// Model is static
+			localModel = staticModel;
+		} else {
+			// Model is dynamically calculated
+			localModel = transform();
+		}
+
 		bind(vao);
 		activateTextures();
 		shader.setMat4("model", localModel);
