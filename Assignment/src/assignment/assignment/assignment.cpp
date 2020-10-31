@@ -36,11 +36,13 @@ const glm::vec3 LIGHT_INITIAL_POS = glm::vec3(0.0f, 0.4f, -0.5f);
 
 // camera
 float cam_height;
-Camera camera;
+Camera camera(glm::vec3(0.0f));
 float lastX;
 float lastY;
 bool firstMouse;
 float fov;
+
+Camera badGuy(glm::vec3(0.0f));
 
 float sprintAnim;
 
@@ -69,7 +71,6 @@ Box roofBox(&tex_marble_diffuse, &tex_marble_specular);
 Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
 Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
 
-Camera badGuy(glm::vec3(0.0f, cam_height, 6.0f));
 Box badGuyBox(&tex_red_bright_diffuse, &tex_marble_specular);
 Box badGuyBoxBack(&tex_marble_diffuse, &tex_green_specular);
 Box badGuyVert(&tex_marble_diffuse, &tex_green_specular);
@@ -135,10 +136,6 @@ void process_input(GLFWwindow *window);
 unsigned int loadTexture(char const * path);
 
 int main() {
-	// Initialise state
-	initialiseState();
-	gameStage = LOST;
-
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
@@ -176,7 +173,12 @@ int main() {
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
 
-	// build and compile our shader zprogram
+
+	// Initialise state
+	initialiseState();
+	//gameStage = LOST;
+
+	// build and compile our shader program
 	// ------------------------------------
 	Shader lighting_shader(
 		FileSystem::getPath("src/assignment/assignment/vertex.vs").c_str(),
@@ -229,7 +231,6 @@ int main() {
 	glEnableVertexAttribArray(0);
 
 
-
 	// load and create textures
 	// -------------------------
 	tex_wood_diffuse = loadTexture(FileSystem::getPath("resources/textures/wood2.jpg").c_str());
@@ -273,7 +274,6 @@ int main() {
 	tex_lose = loadTexture(FileSystem::getPath("resources/textures/lose.png").c_str());
 	tex_lose_specular = loadTexture(FileSystem::getPath("resources/textures/lose_specular.png").c_str());
 
-	
 	//shader configuration -----------------------------------------------------
 	lighting_shader.use();
 	lighting_shader.setInt("material.diffuse", 0);
@@ -303,7 +303,7 @@ int main() {
 		badGuy.MovementSpeed = SPEED / 3.0f;
 
 		badGuyBox.scale = glm::vec3(0.08f, 0.08f, 0.16f);
-		badGuyBox.translate = glm::vec3(0.0f, 0.6f, 5.0f);
+		//badGuyBox.translate = glm::vec3(0.0f, 0.6f, 5.0f);
 
 		badGuyBoxBack.scale = glm::vec3(0.18f);
 
@@ -315,11 +315,9 @@ int main() {
 	// doors
 	float doorZScale = 0.8f;
 	woodDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
-
 	brickDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
-
 	marbleDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
-
+	// metal door
 	{
 		float holeSize = 1.2f;
 		float width = (3.0f - holeSize) / 2;
@@ -468,52 +466,81 @@ int main() {
 		leftWall.render(lighting_shader, VAO_box);
 
 
-		// bad guy -------------------------------------------------------------
+		// doors ---------------------------------------------------------------
+
+		// Wood door
 		{
-			glm::vec3 direction = glm::normalize(camera.Position - badGuy.Position);
-			badGuy.Front = glm::normalize(direction);
-			float minX, maxX, minZ, maxZ, pad = HITBOX_PAD / 8;
-
-			badGuy.CamHeight = cam_height + sin(glfwGetTime() * 2.5f) / 7.0f;
-
-			badGuyBox.translate = badGuy.Position;
-			badGuyBox.yAngle = glm::degrees(atan(direction.x / direction.z));
-			badGuyBox.xAngle = -glm::degrees(atan(direction.y / direction.z));
-
-			badGuyBoxBack.translate = badGuyBox.translate;
-			badGuyBoxBack.translate.x -= direction.x * 0.08f;
-			badGuyBoxBack.translate.z -= direction.z * 0.08f;
-			badGuyBoxBack.yAngle = glm::degrees(atan(direction.x / direction.z));
-			badGuyBoxBack.xAngle = -glm::degrees(atan(direction.y / direction.z));
-
-			badGuyVert.scale.y = badGuy.CamHeight;
-			badGuyVert.translate = badGuyBox.translate;
-			badGuyVert.translate.x -= direction.x * 0.08f;
-			badGuyVert.translate.y /= 2;
-			badGuyVert.translate.z -= direction.z * 0.08f;
-			//badGuyVert.yAngle = glm::degrees(atan(direction.x / direction.z));
-
-			/*badGuyHor.translate = badGuyBox.translate;
-			badGuyHor.translate.x -= direction.x * 0.08f;
-			badGuyHor.translate.z -= direction.z * 0.08f;*/
-			//badGuyHor.yAngle = glm::degrees(atan(direction.x / direction.z));
-
-			badGuyBox.render(lighting_shader, VAO_box);
-			badGuyBoxBack.render(lighting_shader, VAO_box);
-			badGuyVert.render(lighting_shader, VAO_box);
-			//badGuyHor.render(lighting_shader, VAO_box);
-			
-			computeBounds(minX, maxX, minZ, maxZ, pad + badGuyBox.scale.x / 2, badGuy.Position);
-			badGuy.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
-
-
-			/*glm::mat4 model = glm::mat4();
-			model = glm::translate(model, badGuy.Position);
-			float yAngle = glm::degrees(atan(direction.x / direction.z));
-			model = glm::rotate(model, yAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::scale(model, badGuyBox.scale);*/
+			float yVal = woodDoor.scale.y / 2 + sin(glm::radians(doorAnim[DoorStage::WOOD] * 90.0f)) * 2.0f;
+			woodDoor.translate = glm::vec3(0, yVal, -5.0f);
 		}
+		doorAnimationStep(WOOD);
+		woodDoor.render(lighting_shader, VAO_box);
 
+		// Brick door
+		{
+			float anim = doorAnim[DoorStage::BRICK];
+			float x = (brickDoor.scale.x - 0.3f) * anim * anim;
+			float y = brickDoor.scale.y / 2 + sin(glm::radians(anim * anim * 180.0f));
+			brickDoor.translate = glm::vec3(x, y, -10.0f);
+			brickDoor.zAngle = anim * -90.0f;
+			float deltaHeight = sin(glm::radians(anim * anim * 180)) * 2;
+			brickDoor.scale.x = woodDoor.scale.x - deltaHeight;
+			brickDoor.scale.y = woodDoor.scale.y - deltaHeight;
+		}
+		doorAnimationStep(BRICK);
+		brickDoor.render(lighting_shader, VAO_box);
+
+		// Marble graffiti door
+		{
+			float anim = doorAnim[DoorStage::MARBLE];
+			glm::vec3 initialScale = glm::vec3(3.0f, 3.0f, doorZScale);
+			glm::vec3 initialTranslate = glm::vec3(0.0f, initialScale.y / 2, -15.0f);
+			marbleDoor.translate = initialTranslate;
+
+			if (anim < 0.3f) {
+				float localAnim = anim / 3.0f * 10.0f;
+				marbleDoor.scale.x = initialScale.x - (initialScale.x - 1.0f) * sin(glm::radians(localAnim * 90.0f));
+			} else if (anim < 0.6f) {
+				float localAnim = (anim - 0.3f) / 3.0f * 10.0f;
+				marbleDoor.scale.y = initialScale.y - (initialScale.y - 1.0f) * sin(glm::radians(localAnim * 90.0f));
+			} else {
+				float localAnim = (anim - 0.6f) / 3.0f * 10.0f;
+				marbleDoor.zAngle = localAnim * 720.0f;
+				marbleDoor.translate.z = initialTranslate.z + initialTranslate.z * 1.5f * sin(glm::radians(localAnim * 45.0f));
+			}
+		}
+		doorAnimationStep(MARBLE);
+		marbleDoor.render(lighting_shader, VAO_box);
+
+
+		// Metal door
+		{
+			float anim = doorAnim[DoorStage::METAL];
+			if (anim < 0.4f) {
+				float localAnim = anim / 4.0f * 10.0f;
+				metalDoorLeft.translate.y = 1.5f - 3.0f * sin(glm::radians(localAnim * 90.0f));
+				metalDoorRight.translate.y = 1.5f + 3.0f * sin(glm::radians(localAnim * 90.0f));
+			} else {
+				float localAnim = (anim - 0.4f) / 6.0f * 10.0f;
+				metalDoorBot.translate.x = -3.6f * sin(glm::radians(localAnim * 90.0f));
+				metalDoorTop.translate.x = 3.6f * sin(glm::radians(localAnim * 90.0f));
+			}
+
+			if (anim == 1.0f) {
+				// Move things that should not be visible out
+				metalDoorBot.translate.y = 5.0f;
+				metalDoorLeft.translate.x = -5.0f;
+				metalDoorRight.translate.x = 5.0f;
+			}
+
+			doorAnimationStep(METAL);
+			Box* metalDoors[] = {
+				&metalDoorBot, &metalDoorTop, &metalDoorLeft, &metalDoorRight
+			};
+			for (int i = 0; i < 4; i++) {
+				metalDoors[i]->render(lighting_shader, VAO_box);
+			}
+		}
 
 		// buttons -------------------------------------------------------------
 
@@ -603,81 +630,52 @@ int main() {
 		}
 
 
-		// doors ---------------------------------------------------------------
-
-		// Wood door
+		// bad guy -------------------------------------------------------------
 		{
-			float yVal = woodDoor.scale.y / 2 + sin(glm::radians(doorAnim[DoorStage::WOOD] * 90.0f)) * 2.0f;
-			woodDoor.translate = glm::vec3(0, yVal, -5.0f);
-		}
-		doorAnimationStep(WOOD);
-		woodDoor.render(lighting_shader, VAO_box);
+			glm::vec3 direction = glm::normalize(camera.Position - badGuy.Position);
+			badGuy.Front = glm::normalize(direction);
+			float minX, maxX, minZ, maxZ, pad = HITBOX_PAD / 8;
 
-		// Brick door
-		{
-			float anim = doorAnim[DoorStage::BRICK];
-			float x = (brickDoor.scale.x - 0.3f) * anim * anim;
-			float y = brickDoor.scale.y / 2 + sin(glm::radians(anim * anim * 180.0f));
-			brickDoor.translate = glm::vec3(x, y, -10.0f);
-			brickDoor.zAngle = anim * -90.0f;
-			float deltaHeight = sin(glm::radians(anim * anim * 180)) * 2;
-			brickDoor.scale.x = woodDoor.scale.x - deltaHeight;
-			brickDoor.scale.y = woodDoor.scale.y - deltaHeight;
-		}
-		doorAnimationStep(BRICK);
-		brickDoor.render(lighting_shader, VAO_box);
+			badGuy.CamHeight = cam_height + sin(glfwGetTime() * 2.5f) / 7.0f;
 
-		// Marble graffiti door
-		{
-			float anim = doorAnim[DoorStage::MARBLE];
-			glm::vec3 initialScale = glm::vec3(3.0f, 3.0f, doorZScale);
-			glm::vec3 initialTranslate = glm::vec3(0.0f, initialScale.y / 2, -15.0f);
-			marbleDoor.translate = initialTranslate;
+			badGuyBox.translate = badGuy.Position;
+			badGuyBox.yAngle = glm::degrees(atan(direction.x / direction.z));
+			badGuyBox.xAngle = -glm::degrees(atan(direction.y / direction.z));
 
-			if (anim < 0.3f) {
-				float localAnim = anim / 3.0f * 10.0f;
-				marbleDoor.scale.x = initialScale.x - (initialScale.x - 1.0f) * sin(glm::radians(localAnim * 90.0f));
-			} else if (anim < 0.6f) {
-				float localAnim = (anim - 0.3f) / 3.0f * 10.0f;
-				marbleDoor.scale.y = initialScale.y - (initialScale.y - 1.0f) * sin(glm::radians(localAnim * 90.0f));
-			} else {
-				float localAnim = (anim - 0.6f) / 3.0f * 10.0f;
-				marbleDoor.zAngle = localAnim * 720.0f;
-				marbleDoor.translate.z = initialTranslate.z + initialTranslate.z * 1.5f * sin(glm::radians(localAnim * 45.0f));
+			badGuyBoxBack.translate = badGuyBox.translate;
+			badGuyBoxBack.translate.x -= direction.x * 0.08f;
+			badGuyBoxBack.translate.z -= direction.z * 0.08f;
+			badGuyBoxBack.yAngle = glm::degrees(atan(direction.x / direction.z));
+			badGuyBoxBack.xAngle = -glm::degrees(atan(direction.y / direction.z));
+
+			badGuyVert.scale.y = badGuy.CamHeight;
+			badGuyVert.translate = badGuyBox.translate;
+			badGuyVert.translate.x -= direction.x * 0.08f;
+			badGuyVert.translate.y /= 2;
+			badGuyVert.translate.z -= direction.z * 0.08f;
+			badGuyVert.yAngle = glm::degrees(atan(direction.x / direction.z));
+
+			badGuyBox.render(lighting_shader, VAO_box);
+			badGuyBoxBack.render(lighting_shader, VAO_box);
+			badGuyVert.render(lighting_shader, VAO_box);
+			//badGuyHor.render(lighting_shader, VAO_box);
+			
+			computeBounds(minX, maxX, minZ, maxZ, pad + badGuyBox.scale.x / 2, badGuy.Position);
+			badGuy.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
+
+
+			/*glm::mat4 model = glm::mat4();
+			model = glm::translate(model, badGuy.Position);
+			float yAngle = glm::degrees(atan(direction.x / direction.z));
+			model = glm::rotate(model, yAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::scale(model, badGuyBox.scale);*/
+
+			// Check lose condition
+			if (checkBoxRange(badGuyBox, BTN_RANGE / 4)) {
+				gameStage = LOST;
 			}
 		}
-		doorAnimationStep(MARBLE);
-		marbleDoor.render(lighting_shader, VAO_box);
 
-
-		// Metal door
-		{
-			float anim = doorAnim[DoorStage::METAL];
-			if (anim < 0.4f) {
-				float localAnim = anim / 4.0f * 10.0f;
-				metalDoorLeft.translate.y = 1.5f - 3.0f * sin(glm::radians(localAnim * 90.0f));
-				metalDoorRight.translate.y = 1.5f + 3.0f * sin(glm::radians(localAnim * 90.0f));
-			} else {
-				float localAnim = (anim - 0.4f) / 6.0f * 10.0f;
-				metalDoorBot.translate.x = -3.6f * sin(glm::radians(localAnim * 90.0f));
-				metalDoorTop.translate.x = 3.6f * sin(glm::radians(localAnim * 90.0f));
-			}
-
-			if (anim == 1.0f) {
-				// Move things that should not be visible out
-				metalDoorBot.translate.y = 5.0f;
-				metalDoorLeft.translate.x = -5.0f;
-				metalDoorRight.translate.x = 5.0f;
-			}
-
-			doorAnimationStep(METAL);
-			Box* metalDoors[] = {
-				&metalDoorBot, &metalDoorTop, &metalDoorLeft, &metalDoorRight
-			};
-			for (int i = 0; i < 4; i++) {
-				metalDoors[i]->render(lighting_shader, VAO_box);
-			}
-		}
 
 		// death/win screen ----------------------------------------------------
 
@@ -692,7 +690,6 @@ int main() {
 			loseBox.xAngle = 90.0f;
 			loseBox.render(lighting_shader, VAO_box);
 		}
-
 
 
 		// Draw the light source -----------------------------------------------
@@ -797,9 +794,6 @@ void process_input(GLFWwindow *window) {
 				camera.ProcessKeyboard(RIGHT, delta_time, minX, maxX, minZ, maxZ);
 			}
 		}
-		
-
-		
 
 		// Buttons
 		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && input_delay == 0) {
@@ -891,11 +885,15 @@ void process_input(GLFWwindow *window) {
 void initialiseState() {
 	// camera
 	cam_height = 0.8f;
-	camera = Camera(glm::vec3(0.0f, cam_height, 3.0f));
+	camera.Position = glm::vec3(0.0f, cam_height, 3.0f);
+	camera.CamHeight = cam_height;
 	lastX = SCR_WIDTH / 2.0f;
 	lastY = SCR_HEIGHT / 2.0f;
 	firstMouse = true;
 	fov = 60.0f;
+
+	badGuy.CamHeight = cam_height;
+	badGuy.Position = glm::vec3(0.0f, cam_height, 8.0f);
 
 	sprintAnim = 0.0f;
 
@@ -919,44 +917,6 @@ void initialiseState() {
 
 	EXTRA_BRIGHT = false;
 
-	// Boxes
-	/*Box floorBox(&tex_marble_diffuse, &tex_marble_specular);
-	Box roofBox(&tex_marble_diffuse, &tex_marble_specular);
-	Box rightWall(&tex_marble_diffuse, &tex_marble_specular);
-	Box leftWall(&tex_marble_diffuse, &tex_marble_specular);
-
-	Camera badGuy(glm::vec3(0.0f, cam_height, 6.0f));
-	Box badGuyBox(&tex_red_bright_diffuse, &tex_marble_specular);
-	Box badGuyBoxBack(&tex_marble_diffuse, &tex_green_specular);
-	Box badGuyVert(&tex_marble_diffuse, &tex_green_specular);
-	//Box badGuyHor(&tex_marble_diffuse, &tex_green_specular);
-
-	// Button boxes
-	Box button1Box(nullptr, nullptr);
-	Box button2_brick(&tex_brickwall_diffuse, &tex_brickwall_specular);
-	Box button2_metal(&tex_metal_diffuse, &tex_metal_specular);
-	Box button2_wood(&tex_wood_diffuse, &tex_wood_specular);
-	Box button3_2(&tex_graffiti_2_diffuse, &tex_graffiti_2_specular);
-	Box button3_3(&tex_graffiti_3_diffuse, &tex_graffiti_3_specular);
-	Box button3_4(&tex_graffiti_4_diffuse, &tex_graffiti_4_specular);
-	Box button4_1(&tex_grass_diffuse, &tex_grass_specular);
-	Box button4_2(&tex_curtin_diffuse, &tex_curtin_specular);
-	Box button4_3(&tex_street_diffuse, &tex_street_specular);
-
-
-	// Door boxes
-	Box woodDoor(&tex_wood_diffuse, &tex_wood_specular);
-	Box brickDoor(&tex_brickwall_diffuse, &tex_brickwall_specular);
-	Box marbleDoor(&tex_marble2_graffiti_diffuse, &tex_marble2_graffiti_specular);
-	Box metalDoorBot(&tex_metal_diffuse, &tex_metal_specular);
-	Box metalDoorTop(&tex_metal_diffuse, &tex_metal_specular);
-	Box metalDoorLeft(&tex_metal_diffuse, &tex_metal_specular);
-	Box metalDoorRight(&tex_metal_diffuse, &tex_metal_specular);
-
-	// win/lose condition boxes
-	Box loseBox(&tex_lose, &tex_lose_specular);
-	Box winBox(&tex_win, &tex_win_specular);*/
-
 	// Which door is next
 	doorStage = WOOD;
 
@@ -964,6 +924,12 @@ void initialiseState() {
 	for (int i = 0; i < 4; i++) {
 		doorAnim[i] = 0.0f;
 	}
+
+	// Colliders
+	colliders[0] = &woodDoor;
+	colliders[1] = &brickDoor;
+	colliders[2] = &marbleDoor;
+	colliders[3] = &metalDoorBot;
 
 	gameStage = PLAYING;
 }
@@ -978,6 +944,8 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad
 	for (int i = 0; i < collidersLen; i++) {
 		glm::vec3 wallMin = colliders[i]->getNegativeBounds();
 		glm::vec3 wallMax = colliders[i]->getPositiveBounds();
+
+
 
 		if (wallMin.x < pos.x && pos.x < wallMax.x) {
 			// Make sure camera is within the x range of the wall

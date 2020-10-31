@@ -145,6 +145,7 @@ public:
 	}
 
 	glm::vec3 getNegativeBounds() {
+
 		float negX = (-scale.x) / 2 + translate.x;
 		float negY = (-scale.y) / 2 + translate.y;
 		float negZ = (-scale.z) / 2 + translate.z;
