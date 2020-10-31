@@ -38,7 +38,7 @@ const float HITBOX_PAD = 0.25f;
 const float BTN_RANGE = 0.8f;
 
 // Delay after pushing a button until another can be pressed
-const int INPUT_MAX = 20;
+const float INPUT_MAX = 0.3f;
 
 // Initial position of the light source
 const glm::vec3 LIGHT_INITIAL_POS = glm::vec3(0.0f, 0.4f, -0.5f);
@@ -68,7 +68,7 @@ float delta_time = 0.0f;
 float last_frame = 0.0f;
 
 // Countdown until a button can be pressed
-int input_delay;
+float input_delay;
 
 // Light
 float light_radius;
@@ -123,7 +123,12 @@ Box right_wall(&tex_marble_diffuse, &tex_marble_specular, true);
 Box left_wal(&tex_marble_diffuse, &tex_marble_specular, true);
 Box back_wall(&tex_marble_diffuse, &tex_marble_specular, true);
 Box front_wall(&tex_marble_diffuse, &tex_marble_specular, true);
+
+// Win area
 Box win_square(&tex_green_diffuse, &tex_metal_specular, true);
+Box win_pedestal_col(&tex_marble_diffuse, &tex_marble_specular, true);
+Box win_pedestal_base(&tex_marble_diffuse, &tex_marble_specular, true);
+Box win_trophy(&tex_curtin_diffuse, &tex_curtin_specular, true);
 
 // Bad guy
 Box bad_guy_box_eye(&tex_red_bright_diffuse, &tex_marble_specular);
@@ -282,8 +287,8 @@ int main() {
 	tex_marble_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
 	//tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
 	tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble_specular.jpg").c_str());
-	//tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
-	//tex_curtin_specular = loadTexture(FileSystem::getPath("resources/textures/curtin_specular.jpg").c_str());
+	tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
+	tex_curtin_specular = loadTexture(FileSystem::getPath("resources/textures/curtin_specular.jpg").c_str());
 	tex_red_dark_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_dark.jpg").c_str());
 	tex_red_dark_specular = loadTexture(FileSystem::getPath("resources/textures/red_dark_specular.jpg").c_str());
 	tex_red_bright_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_bright.jpg").c_str());
@@ -350,8 +355,20 @@ int main() {
 		// win square
 		win_square.translate = glm::vec3(0.0f, 0.025f, -length / 2 + zOffset + dimen);
 		win_square.scale = glm::vec3(dimen / 1.5f, 0.05f, dimen / 1.5f);
-	}
 
+		// win pedestal
+		win_pedestal_col.scale = glm::vec3(0.25f, 0.45f, 0.25f);
+		win_pedestal_col.translate = win_square.translate;
+		win_pedestal_col.translate.y += win_pedestal_col.scale.y / 2;
+
+		win_pedestal_base.scale = glm::vec3(0.45f, 0.15f, 0.45f);
+		win_pedestal_base.translate = win_square.translate;
+		win_pedestal_base.translate.y += win_pedestal_col.scale.y + win_pedestal_base.scale.y / 2;
+
+		win_trophy.scale = glm::vec3(0.2f, 0.2f, 0.2f);
+		win_trophy.translate = win_pedestal_base.translate;
+		win_trophy.translate += win_pedestal_base.scale.y / 2 + win_trophy.scale.y;
+	}
 	
 
 	// bad guy
@@ -450,7 +467,7 @@ int main() {
 		last_frame = currentFrame;
 
 		//update delay countdown
-		input_delay = max(0, input_delay - 1);
+		input_delay = max(0.0f, input_delay - delta_time);
 
 		// input
 		// -----
@@ -463,7 +480,7 @@ int main() {
 
 
 		// activate shader
-		if (lamp_carrying) {
+		if (lamp_carrying && game_stage == PLAYING) {
 			float minX, maxX, minZ, maxZ, pad = HITBOX_PAD / 2;
 			light_pos = camera.Position;
 			computeBounds(minX, maxX, minZ, maxZ, pad, light_pos);
@@ -472,6 +489,9 @@ int main() {
 			light_pos.z += 0.5f * camera.Front.z + 0.1f * camera.Right.z;
 			light_pos.x = med(minX, maxX, light_pos.x);
 			light_pos.z = med(minZ, maxZ, light_pos.z);
+		} else if (game_stage != PLAYING) {
+			// Game over screen - move light to a bit behind player
+			light_pos = camera.Position - camera.Front;
 		} else {
 			double time = glfwGetTime();
 			light_pos = glm::vec3(0.0f, 0.3f + sin(glm::radians(time * 180)) / 7.0f, -0.2f);
@@ -529,17 +549,53 @@ int main() {
 		back_wall.render(lighting_shader, VAO_box);
 		front_wall.render(lighting_shader, VAO_box);
 		win_square.render(lighting_shader, VAO_box);
+		win_pedestal_col.render(lighting_shader, VAO_box);
+		win_pedestal_base.render(lighting_shader, VAO_box);
+		win_trophy.render(lighting_shader, VAO_box);
 
 
 		// Doors ---------------------------------------------------------------
 
 		// Wood door
 		{
-			float yVal = woodDoor.scale.y / 2 + sin(glm::radians(door_anim[DoorStage::WOOD] * 90.0f)) * 2.0f;
-			woodDoor.translate = glm::vec3(0, yVal, -5.0f);
+			float anim = door_anim[DoorStage::WOOD];
+			float miniBoxDim = 0.8f;
+			float bottomY = sin(glm::radians(anim * 90.0f)) * (woodDoor.scale.y - miniBoxDim * 2);
+
+			Box topLeft(&tex_wood_diffuse, &tex_wood_specular);
+			Box topRight(&tex_wood_diffuse, &tex_wood_specular);
+			Box botLeft(&tex_wood_diffuse, &tex_wood_specular);
+			Box botRight(&tex_wood_diffuse, &tex_wood_specular);
+
+			Box* miniBoxes[] = { &topLeft, &topRight, &botLeft, &botRight };
+
+			for (int i = 0; i < 4; i++) {
+				Box* curr = miniBoxes[i];
+				curr->scale = glm::vec3(miniBoxDim, miniBoxDim, 0.07f);
+				curr->translate.z = -5.0f + woodDoor.scale.z / 2 + curr->scale.z / 2;
+				if (i < 2) {
+					// Top
+					curr->translate.y = woodDoor.scale.y - curr->scale.y / 2;
+				} else {
+					// Bottom
+					curr->translate.y = curr->scale.y / 2 + bottomY;
+				}
+				if (i == 0 || i == 2) {
+					// Left
+					curr->translate.x = -woodDoor.scale.x / 2 + curr->scale.x / 2;
+				} else {
+					// Right
+					curr->translate.x = woodDoor.scale.x / 2 - curr->scale.x / 2;
+				}
+			}
+
+			woodDoor.translate = glm::vec3(0, woodDoor.scale.y / 2 + bottomY, -5.0f);
 
 			doorAnimationStep(WOOD);
 			woodDoor.render(lighting_shader, VAO_box);
+			for (int i = 0; i < 4; i++) {
+				miniBoxes[i]->render(lighting_shader, VAO_box);
+			}
 		}
 
 		// Brick door
@@ -777,11 +833,12 @@ int main() {
 			} else {
 				glm::vec3 minBound = win_square.getNegativeBounds();
 				glm::vec3 maxBound = win_square.getPositiveBounds();
+				float pad = 0.3f;
 
-				if (camera.Position.x > minBound.x &&
-					camera.Position.x < maxBound.x &&
-					camera.Position.z > minBound.z &&
-					camera.Position.z < maxBound.z
+				if (camera.Position.x > minBound.x + pad &&
+					camera.Position.x < maxBound.x - pad &&
+					camera.Position.z > minBound.z + pad &&
+					camera.Position.z < maxBound.z - pad
 				) {
 					game_stage = WON;
 				}
@@ -789,24 +846,33 @@ int main() {
 
 		} else if (game_stage == LOST) {
 			// death screen
-			camera.CamHeight = 0.3f;
+			camera.CamHeight = 0.2f; // Lie on the ground
 			camera.Pitch = 0.0f;
+			camera.Fov = camera.MaxFov;
+			camera.updateCameraVectors();
+
 			lose_box.translate = camera.Position;
-			lose_box.translate.x += 1.0f * camera.Front.x;
+			lose_box.translate.x += 0.5f * camera.Front.x;
 			lose_box.translate.y += camera.Front.y;
-			lose_box.translate.z += 1.0f * camera.Front.z;
+			lose_box.translate.z += 0.5f * camera.Front.z;
 			lose_box.yAngle = -camera.Yaw;
 			lose_box.xAngle = 90.0f;
+
 			lose_box.render(lighting_shader, VAO_box);
 
 		} else if (game_stage == WON) {
 			// win screen
+			camera.Pitch = 0.0f;
+			camera.Fov = camera.MaxFov;
+			camera.updateCameraVectors();
+
 			win_box.translate = camera.Position;
-			win_box.translate.x += 1.0f * camera.Front.x;
+			win_box.translate.x += 0.5f * camera.Front.x;
 			win_box.translate.y += camera.Front.y;
-			win_box.translate.z += 1.0f * camera.Front.z;
+			win_box.translate.z += 0.5f * camera.Front.z;
 			win_box.yAngle = -camera.Yaw;
 			win_box.xAngle = 90.0f;
+
 			win_box.render(lighting_shader, VAO_box);
 		}
 
