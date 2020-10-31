@@ -79,6 +79,11 @@ glm::vec3 light_pos;
 // State of buttons
 bool button_pressed[4];
 int button_pressed_len = 4;
+// Other 'wrong' buttons
+bool button_2_metal_pressed;
+bool button_2_wood_pressed;
+bool button_3_2_pressed;
+bool button_3_4_pressed;
 
 // True for perspective projection, false for othographic (parallel) projection
 bool perspective_proj;
@@ -94,7 +99,7 @@ enum DoorStage {
 	METAL = 3,
 	FINISH = 4
 };
-DoorStage doorStage;
+DoorStage door_stage;
 
 Box* colliders[4];
 int colliders_len = 4;
@@ -367,6 +372,8 @@ int main() {
 	brick_door.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 	marble_door.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 	// metal door
+	glm::vec3 metalDoorInitialScale[4];
+	glm::vec3 metalDoorInitialTranslate[4];
 	{
 		float holeSize = 1.2f;
 		float width = (3.0f - holeSize) / 2;
@@ -396,6 +403,11 @@ int main() {
 		// Make l/r short
 		metal_door_left.scale.y = holeSize;
 		metal_door_right.scale.y = holeSize;
+
+		for (int i = 0; i < 4; i++) {
+			metalDoorInitialScale[i] = metalDoors[i]->scale;
+			metalDoorInitialTranslate[i] = metalDoors[i]->translate;
+		}
 	}
 
 	// buttons
@@ -452,7 +464,7 @@ int main() {
 
 		// activate shader
 		if (lamp_carrying) {
-			float minX, maxX, minZ, maxZ, pad = HITBOX_PAD / 4;
+			float minX, maxX, minZ, maxZ, pad = HITBOX_PAD / 2;
 			light_pos = camera.Position;
 			light_pos.x += 0.5f * camera.Front.x + 0.1f * camera.Right.x;
 			light_pos.y += 0.3f * camera.Front.y - 0.15f;
@@ -509,6 +521,7 @@ int main() {
 		//------------------------------------------------------------------------------------------
 
 		// render static objects -----------------------------------------------
+
 		floor_box.render(lighting_shader, VAO_box);
 		roof_box.render(lighting_shader, VAO_box);
 		right_wall.render(lighting_shader, VAO_box);
@@ -518,15 +531,16 @@ int main() {
 		win_square.render(lighting_shader, VAO_box);
 
 
-		// doors ---------------------------------------------------------------
+		// Doors ---------------------------------------------------------------
 
 		// Wood door
 		{
 			float yVal = woodDoor.scale.y / 2 + sin(glm::radians(door_anim[DoorStage::WOOD] * 90.0f)) * 2.0f;
 			woodDoor.translate = glm::vec3(0, yVal, -5.0f);
+
+			doorAnimationStep(WOOD);
+			woodDoor.render(lighting_shader, VAO_box);
 		}
-		doorAnimationStep(WOOD);
-		woodDoor.render(lighting_shader, VAO_box);
 
 		// Brick door
 		{
@@ -538,18 +552,22 @@ int main() {
 			float deltaHeight = sin(glm::radians(anim * anim * 180)) * 2;
 			brick_door.scale.x = woodDoor.scale.x - deltaHeight;
 			brick_door.scale.y = woodDoor.scale.y - deltaHeight;
+
+			doorAnimationStep(BRICK);
+			brick_door.render(lighting_shader, VAO_box);
 		}
-		doorAnimationStep(BRICK);
-		brick_door.render(lighting_shader, VAO_box);
 
 		// Marble graffiti door
 		{
 			float anim = door_anim[DoorStage::MARBLE];
 			glm::vec3 initialScale = glm::vec3(3.0f, 3.0f, doorZScale);
 			glm::vec3 initialTranslate = glm::vec3(0.0f, initialScale.y / 2, -15.0f);
-			marble_door.translate = initialTranslate;
-
-			if (anim < 0.3f) {
+			
+			if (anim == 0.0f) {
+				marble_door.zAngle = 0.0f;
+				marble_door.translate = initialTranslate;
+				marble_door.scale = initialScale;
+			} else if (anim < 0.3f) {
 				float localAnim = anim / 3.0f * 10.0f;
 				marble_door.scale.x = initialScale.x - (initialScale.x - 1.0f) * sin(glm::radians(localAnim * 90.0f));
 			} else if (anim < 0.6f) {
@@ -560,15 +578,24 @@ int main() {
 				marble_door.zAngle = localAnim * 720.0f;
 				marble_door.translate.z = initialTranslate.z + initialTranslate.z * 1.5f * sin(glm::radians(localAnim * 45.0f));
 			}
+
+			doorAnimationStep(MARBLE);
+			marble_door.render(lighting_shader, VAO_box);
 		}
-		doorAnimationStep(MARBLE);
-		marble_door.render(lighting_shader, VAO_box);
 
 
 		// Metal door
 		{
+			Box* metalDoors[] = {
+				&metal_door_bottom, &metal_door_top, &metal_door_left, &metal_door_right
+			};
 			float anim = door_anim[DoorStage::METAL];
-			if (anim < 0.4f) {
+			if (anim == 0.0f) {
+				for (int i = 0; i < 4; i++) {
+					metalDoors[i]->scale = metalDoorInitialScale[i];
+					metalDoors[i]->translate = metalDoorInitialTranslate[i];
+				}
+			} else if (anim < 0.4f) {
 				float localAnim = anim / 4.0f * 10.0f;
 				metal_door_left.translate.y = 1.5f - 3.0f * sin(glm::radians(localAnim * 90.0f));
 				metal_door_right.translate.y = 1.5f + 3.0f * sin(glm::radians(localAnim * 90.0f));
@@ -586,9 +613,6 @@ int main() {
 			}
 
 			doorAnimationStep(METAL);
-			Box* metalDoors[] = {
-				&metal_door_bottom, &metal_door_top, &metal_door_left, &metal_door_right
-			};
 			for (int i = 0; i < 4; i++) {
 				metalDoors[i]->render(lighting_shader, VAO_box);
 			}
@@ -620,6 +644,23 @@ int main() {
 			} else {
 				buttonXOffset = 0.02f;
 			}
+
+			if (button_2_metal_pressed) {
+				button_2_box_metal.diffuseTex = &tex_red_dark_diffuse;
+				button_2_box_metal.specularTex = &tex_red_dark_specular;
+			} else {
+				button_2_box_metal.diffuseTex = &tex_metal_diffuse;
+				button_2_box_metal.specularTex = &tex_metal_specular;
+			}
+
+			if (button_2_wood_pressed) {
+				button_2_box_wood.diffuseTex = &tex_red_dark_diffuse;
+				button_2_box_wood.specularTex = &tex_red_dark_specular;
+			} else {
+				button_2_box_wood.diffuseTex = &tex_wood_diffuse;
+				button_2_box_wood.specularTex = &tex_wood_specular;
+			}
+
 			float x = right_wall.getNegativeBounds().x - 0.02f;
 			float y = camera.Position.y - 0.2f;
 			float z = brick_door.getPositiveBounds().z + 0.5f;
@@ -639,11 +680,29 @@ int main() {
 			initialDoor.translate = glm::vec3(0.0f, initialDoor.scale.y / 2, -15.0f);
 			Box* button3s[] = { &button_3_box_2, &button_3_box_3, &button_3_box_4 };
 			float buttonXOffset;
+
 			if (button_pressed[MARBLE]) {
 				buttonXOffset = -0.04f;
 			} else {
 				buttonXOffset = 0.02f;
 			}
+
+			if (button_3_2_pressed) {
+				button_3_box_2.diffuseTex = &tex_red_dark_diffuse;
+				button_3_box_2.specularTex = &tex_red_dark_specular;
+			} else {
+				button_3_box_2.diffuseTex = &tex_graffiti_2_diffuse;
+				button_3_box_2.specularTex = &tex_graffiti_2_specular;
+			}
+
+			if (button_3_4_pressed) {
+				button_3_box_4.diffuseTex = &tex_red_dark_diffuse;
+				button_3_box_4.specularTex = &tex_red_dark_specular;
+			} else {
+				button_3_box_4.diffuseTex = &tex_graffiti_4_diffuse;
+				button_3_box_4.specularTex = &tex_graffiti_4_specular;
+			}
+
 			float x = right_wall.getNegativeBounds().x - 0.02f;
 			float y = camera.Position.y - 0.2f;
 			float z = initialDoor.getPositiveBounds().z + 0.5f;
@@ -810,7 +869,7 @@ int main() {
 }
 
 void doorAnimationStep(DoorStage stage) {
-	if (doorStage > stage && door_anim[stage] < 1.0f) {
+	if (door_stage > stage && door_anim[stage] < 1.0f) {
 		door_anim[stage] = min(1.0f, door_anim[stage] + delta_time / 2);
 	}
 }
@@ -863,43 +922,39 @@ void processInput(GLFWwindow *window) {
 				//toggle button 1 (wood door)
 				input_delay = INPUT_MAX;
 				button_pressed[WOOD] = true;
-				if (doorStage == WOOD) {
-					doorStage = BRICK;
+				if (door_stage == WOOD) {
+					door_stage = BRICK;
 				}
 			} else if (checkBoxRange(button_2_box_brick, BTN_RANGE)) {
 				//toggle button 2 (brick door)
 				input_delay = INPUT_MAX;
 				button_pressed[BRICK] = true;
-				if (doorStage == BRICK) {
-					doorStage = MARBLE;
+				if (door_stage == BRICK) {
+					door_stage = MARBLE;
 				}
 			} else if (checkBoxRange(button_2_box_metal, BTN_RANGE)) {
 				// false button2 (metal)
 				input_delay = INPUT_MAX;
-				button_2_box_metal.diffuseTex = &tex_red_dark_diffuse;
-				button_2_box_metal.specularTex = &tex_red_dark_specular;
+				button_2_metal_pressed = true;
 			} else if (checkBoxRange(button_2_box_wood, BTN_RANGE)) {
 				// false button2 (wood)
 				input_delay = INPUT_MAX;
-				button_2_box_wood.diffuseTex = &tex_red_dark_diffuse;
-				button_2_box_wood.specularTex = &tex_red_dark_specular;
+				button_2_wood_pressed = true;
 			} else if (checkBoxRange(button_3_box_3, BTN_RANGE)) {
 				// toggle button 3 (marble graffiti door)
 				input_delay = INPUT_MAX;
 				button_pressed[MARBLE] = true;
-				if (doorStage == MARBLE) {
-					doorStage = METAL;
+				if (door_stage == MARBLE) {
+					door_stage = METAL;
 				}
 			} else if (checkBoxRange(button_3_box_2, BTN_RANGE)) {
 				// false button3 (1+2=2)
 				input_delay = INPUT_MAX;
-				button_3_box_2.diffuseTex = &tex_red_dark_diffuse;
-				button_3_box_2.specularTex = &tex_red_dark_specular;
+				button_3_2_pressed = true;
 			} else if (checkBoxRange(button_3_box_4, BTN_RANGE)) {
 				// false button3 (1+2=4)
 				input_delay = INPUT_MAX;
-				button_3_box_4.diffuseTex = &tex_red_dark_diffuse;
-				button_3_box_4.specularTex = &tex_red_dark_specular;
+				button_3_4_pressed = true;
 			} else if (
 				checkBoxRange(button_4_box_1, BTN_RANGE)
 				|| checkBoxRange(button_4_box_2, BTN_RANGE)
@@ -908,8 +963,8 @@ void processInput(GLFWwindow *window) {
 				// toggle button 4's (all of them) (metal door)
 				input_delay = INPUT_MAX;
 				button_pressed[METAL] = true;
-				if (doorStage == METAL) {
-					doorStage = FINISH;
+				if (door_stage == METAL) {
+					door_stage = FINISH;
 				}
 			}
 		}
@@ -972,13 +1027,17 @@ void initialiseState() {
 	for (int i = 0; i < 4; i++) {
 		button_pressed[i] = false;
 	}
+	button_2_metal_pressed = false;
+	button_2_wood_pressed = false;
+	button_3_2_pressed = false;
+	button_3_4_pressed = false;
 
 	perspective_proj = true;
 
 	extra_bright = false;
 
 	// Which door is next
-	doorStage = WOOD;
+	door_stage = WOOD;
 
 	// Door animations
 	for (int i = 0; i < 4; i++) {
@@ -1047,7 +1106,7 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
-unsigned int loadTexture(char const * path) {
+unsigned int loadTexture(char const* path) {
 
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
