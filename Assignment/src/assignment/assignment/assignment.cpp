@@ -46,6 +46,11 @@ const glm::vec3 LIGHT_INITIAL_POS = glm::vec3(0.0f, 0.4f, -0.5f);
 // Height of the camera
 const float CAM_HEIGHT = 0.8f;
 
+// X Offsets from buttons being pressed
+const float BUTTON_PRESSED_OFFSET = 0.04f;
+
+const float BUTTON_HEIGHT = CAM_HEIGHT - 0.2f;
+
 // Game state ------------------------------------------------------------------
 
 // Camera
@@ -77,13 +82,15 @@ bool lamp_carrying;
 glm::vec3 light_pos;
 
 // State of buttons
-bool button_pressed[4];
-int button_pressed_len = 4;
-// Other 'wrong' buttons
+bool button_1_pressed;
+bool button_2_brick_pressed;
 bool button_2_metal_pressed;
 bool button_2_wood_pressed;
 bool button_3_2_pressed;
+bool button_3_3_pressed;
 bool button_3_4_pressed;
+bool button_4_1_pressed;
+bool button_4_2_pressed;
 
 // True for perspective projection, false for othographic (parallel) projection
 bool perspective_proj;
@@ -120,7 +127,7 @@ GameStage game_stage;
 Box floor_box(&tex_marble_diffuse, &tex_marble_specular, true);
 Box roof_box(&tex_marble_diffuse, &tex_marble_specular, true);
 Box right_wall(&tex_marble_diffuse, &tex_marble_specular, true);
-Box left_wal(&tex_marble_diffuse, &tex_marble_specular, true);
+Box left_wall(&tex_marble_diffuse, &tex_marble_specular, true);
 Box back_wall(&tex_marble_diffuse, &tex_marble_specular, true);
 Box front_wall(&tex_marble_diffuse, &tex_marble_specular, true);
 
@@ -144,8 +151,7 @@ Box button_3_box_2(&tex_graffiti_2_diffuse, &tex_graffiti_2_specular);
 Box button_3_box_3(&tex_graffiti_3_diffuse, &tex_graffiti_3_specular);
 Box button_3_box_4(&tex_graffiti_4_diffuse, &tex_graffiti_4_specular);
 Box button_4_box_1(&tex_grass_diffuse, &tex_grass_specular);
-Box button_4_box_2(&tex_curtin_diffuse, &tex_curtin_specular);
-Box button_4_box_3(&tex_street_diffuse, &tex_street_specular);
+Box button_4_box_2(&tex_street_diffuse, &tex_street_specular);
 
 // Door boxes
 Box woodDoor(&tex_wood_diffuse, &tex_wood_specular);
@@ -163,14 +169,15 @@ Box win_box(&tex_win, &tex_win_specular);
 // Function forward declarations -----------------------------------------------
 
 void initialiseState();
-void doorAnimationStep(DoorStage stage);
-void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+void doorAnimationStep(DoorStage);
+void doorAnimationStep(DoorStage, float);
+void mouseCallback(GLFWwindow*, double, double);
 void computeBounds(float&, float&, float&, float&, float, glm::vec3);
 bool checkBoxRange(Box, float);
-void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window);
-unsigned int loadTexture(char const * path);
+void scrollCallback(GLFWwindow*, double, double);
+void framebufferSizeCallback(GLFWwindow*, int, int);
+void processInput(GLFWwindow*);
+unsigned int loadTexture(char const*);
 
 // Program ---------------------------------------------------------------------
 
@@ -212,10 +219,8 @@ int main() {
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
 
-
 	// Initialise state
 	initialiseState();
-	//gameStage = LOST;
 
 	// build and compile our shader program
 	// ------------------------------------
@@ -333,8 +338,8 @@ int main() {
 		right_wall.scale = glm::vec3(width, dimen, length);
 
 		// left wall
-		left_wal.translate = glm::vec3(-dimen / 2, dimen / 2, zOffset);
-		left_wal.scale = glm::vec3(width, dimen, length);
+		left_wall.translate = glm::vec3(-dimen / 2, dimen / 2, zOffset);
+		left_wall.scale = glm::vec3(width, dimen, length);
 
 		// floor
 		floor_box.translate = glm::vec3(0.0f, 0.0f, zOffset);
@@ -366,8 +371,9 @@ int main() {
 		win_pedestal_base.translate.y += win_pedestal_col.scale.y + win_pedestal_base.scale.y / 2;
 
 		win_trophy.scale = glm::vec3(0.2f, 0.2f, 0.2f);
-		win_trophy.translate = win_pedestal_base.translate;
-		win_trophy.translate += win_pedestal_base.scale.y / 2 + win_trophy.scale.y;
+		win_trophy.translate = win_square.translate;
+		win_trophy.translate.y += win_pedestal_col.scale.y + win_pedestal_base.scale.y + win_trophy.scale.y / 2;
+		win_trophy.xAngle = 90.0f;
 	}
 	
 
@@ -376,7 +382,6 @@ int main() {
 		bad_guy.MovementSpeed = SPEED / 3.0f;
 
 		bad_guy_box_eye.scale = glm::vec3(0.08f, 0.08f, 0.16f);
-		//badGuyBox.translate = glm::vec3(0.0f, 0.6f, 5.0f);
 
 		bad_guy_box_back.scale = glm::vec3(0.18f);
 
@@ -444,8 +449,8 @@ int main() {
 	}
 
 	{
-		Box* buttons[] = { &button_4_box_1, &button_4_box_2, &button_4_box_3 };
-		for (int i = 0; i < 3; i++) {
+		Box* buttons[] = { &button_4_box_1, &button_4_box_2 };
+		for (int i = 0; i < 2; i++) {
 			buttons[i]->scale = glm::vec3(buttonDimenScale);
 			buttons[i]->xAngle = 90.0f;
 		}
@@ -537,7 +542,7 @@ int main() {
 		lighting_shader.setMat4("view", view);
 
 
-		//Draw objects
+		// Draw objects
 		//------------------------------------------------------------------------------------------
 
 		// render static objects -----------------------------------------------
@@ -545,7 +550,7 @@ int main() {
 		floor_box.render(lighting_shader, VAO_box);
 		roof_box.render(lighting_shader, VAO_box);
 		right_wall.render(lighting_shader, VAO_box);
-		left_wal.render(lighting_shader, VAO_box);
+		left_wall.render(lighting_shader, VAO_box);
 		back_wall.render(lighting_shader, VAO_box);
 		front_wall.render(lighting_shader, VAO_box);
 		win_square.render(lighting_shader, VAO_box);
@@ -646,29 +651,31 @@ int main() {
 				&metal_door_bottom, &metal_door_top, &metal_door_left, &metal_door_right
 			};
 			float anim = door_anim[DoorStage::METAL];
+
 			if (anim == 0.0f) {
 				for (int i = 0; i < 4; i++) {
 					metalDoors[i]->scale = metalDoorInitialScale[i];
 					metalDoors[i]->translate = metalDoorInitialTranslate[i];
 				}
-			} else if (anim < 0.4f) {
+			} else if (anim <= 0.5f) {
 				float localAnim = anim / 4.0f * 10.0f;
-				metal_door_left.translate.y = 1.5f - 3.0f * sin(glm::radians(localAnim * 90.0f));
-				metal_door_right.translate.y = 1.5f + 3.0f * sin(glm::radians(localAnim * 90.0f));
+				metal_door_left.translate.y = 1.5f - (metal_door_left.scale.y * 1.1f) * sin(glm::radians(localAnim * 90.0f));
+				metal_door_right.translate.y = 1.5f + (metal_door_right.scale.y * 1.1f) * sin(glm::radians(localAnim * 90.0f));
 			} else {
 				float localAnim = (anim - 0.4f) / 6.0f * 10.0f;
-				metal_door_bottom.translate.x = -3.6f * sin(glm::radians(localAnim * 90.0f));
-				metal_door_top.translate.x = 3.6f * sin(glm::radians(localAnim * 90.0f));
-			}
-
-			if (anim == 1.0f) {
-				// Move things that should not be visible out
-				metal_door_bottom.translate.y = 5.0f;
+				float offset = sin(glm::radians(localAnim * 90.0f));
+				metal_door_bottom.translate.x = -2.7f * offset * offset;
+				metal_door_top.translate.x = 2.7f * offset * offset;
 				metal_door_left.translate.x = -5.0f;
 				metal_door_right.translate.x = 5.0f;
 			}
 
-			doorAnimationStep(METAL);
+			if (button_4_1_pressed && button_4_2_pressed) {
+				doorAnimationStep(METAL, 1.0f);
+			} else if (button_4_1_pressed || button_4_2_pressed) {
+				doorAnimationStep(METAL, 0.5f);
+			}
+			
 			for (int i = 0; i < 4; i++) {
 				metalDoors[i]->render(lighting_shader, VAO_box);
 			}
@@ -677,115 +684,125 @@ int main() {
 		// buttons -------------------------------------------------------------
 
 		// Button 1 (wood door)
-		{
-			float buttonXOffset;
-			if (button_pressed[WOOD]) {
-				buttonXOffset = -0.04f;
-			} else {
-				buttonXOffset = 0.02f;
-			}
-			float x = right_wall.getNegativeBounds().x - buttonXOffset;
-			float y = camera.Position.y - 0.2f;
+		{		
+			float x = right_wall.getNegativeBounds().x;
+			float y = BUTTON_HEIGHT;
 			float z = woodDoor.getPositiveBounds().z + 0.5f;
+
 			button_1_box.translate = glm::vec3(x, y, z);
+
+			if (button_1_pressed) {
+				button_1_box.translate.x += BUTTON_PRESSED_OFFSET;
+			}
+
+			button_1_box.render(lighting_shader, VAO_box);
 		}
-		button_1_box.render(lighting_shader, VAO_box);
 
 		// Button 2's (brick door)
 		{
-			Box* button2s[] = { &button_2_box_brick, &button_2_box_metal, &button_2_box_wood };
-			float buttonXOffset;
-			if (button_pressed[BRICK]) {
-				buttonXOffset = -0.04f;
-			} else {
-				buttonXOffset = 0.02f;
-			}
+			Box* button2[] = { &button_2_box_brick, &button_2_box_metal, &button_2_box_wood };
+			bool button2Pressed[] = { button_2_brick_pressed, button_2_metal_pressed, button_2_wood_pressed };
 
-			if (button_2_metal_pressed) {
-				button_2_box_metal.diffuseTex = &tex_red_dark_diffuse;
-				button_2_box_metal.specularTex = &tex_red_dark_specular;
-			} else {
-				button_2_box_metal.diffuseTex = &tex_metal_diffuse;
-				button_2_box_metal.specularTex = &tex_metal_specular;
-			}
-
-			if (button_2_wood_pressed) {
-				button_2_box_wood.diffuseTex = &tex_red_dark_diffuse;
-				button_2_box_wood.specularTex = &tex_red_dark_specular;
-			} else {
-				button_2_box_wood.diffuseTex = &tex_wood_diffuse;
-				button_2_box_wood.specularTex = &tex_wood_specular;
-			}
-
-			float x = right_wall.getNegativeBounds().x - 0.02f;
-			float y = camera.Position.y - 0.2f;
+			float x = right_wall.getNegativeBounds().x;
+			float y = BUTTON_HEIGHT;
 			float z = brick_door.getPositiveBounds().z + 0.5f;
-			for (int i = 1; i < 3; i++) {
-				button2s[i]->translate = glm::vec3(x, y, z + i * 0.7f);
-			}
-			button_2_box_brick.translate = glm::vec3(x - buttonXOffset, y, z);
+
 			for (int i = 0; i < 3; i++) {
-				button2s[i]->render(lighting_shader, VAO_box);
+				Box* curr = button2[i];
+				bool currPressed = button2Pressed[i];
+
+				curr->translate = glm::vec3(x, y, z + i * 0.7f);
+
+				// Depress button if needed
+				if (currPressed) {
+					curr->translate.x += BUTTON_PRESSED_OFFSET;
+				}
+
+				// Turn red if needed
+				if (i != 0) {
+					if (currPressed) {
+						curr->diffuseTex = &tex_red_dark_diffuse;
+						curr->specularTex = &tex_red_dark_specular;
+					} else {
+						if (i == 1) {
+							curr->diffuseTex = &tex_metal_diffuse;
+							curr->specularTex = &tex_metal_specular;
+						} else if (i == 2) {
+							curr->diffuseTex = &tex_wood_diffuse;
+							curr->specularTex = &tex_wood_specular;
+						}
+					}
+				}
+
+				curr->render(lighting_shader, VAO_box);
 			}
 		}
 
 		// Button 3's (marble graffiti door)
 		{
+			Box* button3[] = { &button_3_box_2, &button_3_box_3, &button_3_box_4 };
+			bool button3Pressed[] = { button_3_2_pressed, button_3_3_pressed, button_3_4_pressed };
+
 			Box initialDoor(&tex_brickwall_diffuse, &tex_brickwall_specular);
 			initialDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 			initialDoor.translate = glm::vec3(0.0f, initialDoor.scale.y / 2, -15.0f);
-			Box* button3s[] = { &button_3_box_2, &button_3_box_3, &button_3_box_4 };
-			float buttonXOffset;
-
-			if (button_pressed[MARBLE]) {
-				buttonXOffset = -0.04f;
-			} else {
-				buttonXOffset = 0.02f;
-			}
-
-			if (button_3_2_pressed) {
-				button_3_box_2.diffuseTex = &tex_red_dark_diffuse;
-				button_3_box_2.specularTex = &tex_red_dark_specular;
-			} else {
-				button_3_box_2.diffuseTex = &tex_graffiti_2_diffuse;
-				button_3_box_2.specularTex = &tex_graffiti_2_specular;
-			}
-
-			if (button_3_4_pressed) {
-				button_3_box_4.diffuseTex = &tex_red_dark_diffuse;
-				button_3_box_4.specularTex = &tex_red_dark_specular;
-			} else {
-				button_3_box_4.diffuseTex = &tex_graffiti_4_diffuse;
-				button_3_box_4.specularTex = &tex_graffiti_4_specular;
-			}
-
-			float x = right_wall.getNegativeBounds().x - 0.02f;
-			float y = camera.Position.y - 0.2f;
+			
+			float x = right_wall.getNegativeBounds().x;
+			float y = BUTTON_HEIGHT;
 			float z = initialDoor.getPositiveBounds().z + 0.5f;
+
 			for (int i = 0; i < 3; i++) {
-				button3s[i]->translate = glm::vec3(x, y, z + i * 0.7f);
-			}
-			button_3_box_3.translate.x -= buttonXOffset;
-			for (int i = 0; i < 3; i++) {
-				button3s[i]->render(lighting_shader, VAO_box);
+				Box* curr = button3[i];
+				bool currPressed = button3Pressed[i];
+
+				curr->translate = glm::vec3(x, y, z + i * 0.7f);
+
+				// Depress button if needed
+				if (currPressed) {
+					curr->translate.x += BUTTON_PRESSED_OFFSET;
+				}
+
+				// Turn red if needed
+				if (i != 1) {
+					if (currPressed) {
+						curr->diffuseTex = &tex_red_dark_diffuse;
+						curr->specularTex = &tex_red_dark_specular;
+					} else {
+						if (i == 0) {
+							curr->diffuseTex = &tex_graffiti_2_diffuse;
+							curr->specularTex = &tex_graffiti_2_specular;
+						} else if (i == 2) {
+							curr->diffuseTex = &tex_graffiti_4_diffuse;
+							curr->specularTex = &tex_graffiti_4_specular;
+						}
+					}
+				}
+
+				curr->render(lighting_shader, VAO_box);
 			}
 		}
 
 		// Button 4's (metal door)
 		{
-			Box* button4s[] = { &button_4_box_1, &button_4_box_2, &button_4_box_3 };
-			float buttonXOffset;
-			if (button_pressed[METAL]) {
-				buttonXOffset = -0.04f;
-			} else {
-				buttonXOffset = 0.02f;
-			}
-			float x = right_wall.getNegativeBounds().x - 0.02f;
-			float y = camera.Position.y - 0.2f;
+			Box* button4[] = { &button_4_box_1, &button_4_box_2 };
+			bool button4Pressed[] = { button_4_1_pressed, button_4_2_pressed };
+
+			float x = right_wall.getNegativeBounds().x;
+			float y = BUTTON_HEIGHT;
 			float z = metal_door_bottom.getPositiveBounds().z + 0.5f;
-			for (int i = 0; i < 3; i++) {
-				button4s[i]->translate = glm::vec3(x - buttonXOffset, y, z + i * 0.7f);
-				button4s[i]->render(lighting_shader, VAO_box);
+
+			for (int i = 0; i < 2; i++) {
+				Box* curr = button4[i];
+				bool currPressed = button4Pressed[i];
+
+				curr->translate = glm::vec3(x, y, z + i * 0.7f);
+
+				// Depress button if needed
+				if (currPressed) {
+					curr->translate.x += BUTTON_PRESSED_OFFSET;
+				}
+
+				curr->render(lighting_shader, VAO_box);
 			}
 		}
 
@@ -810,7 +827,7 @@ int main() {
 			bad_guy_box_stem.scale.y = bad_guy.CamHeight;
 			bad_guy_box_stem.translate = bad_guy_box_eye.translate;
 			bad_guy_box_stem.translate.x -= direction.x * 0.08f;
-			bad_guy_box_stem.translate.y /= 2;
+			bad_guy_box_stem.translate.y /= 2.0f;
 			bad_guy_box_stem.translate.z -= direction.z * 0.08f;
 			bad_guy_box_stem.yAngle = glm::degrees(atan(direction.x / direction.z));
 
@@ -819,7 +836,7 @@ int main() {
 			bad_guy_box_stem.render(lighting_shader, VAO_box);
 
 			float minX, maxX, minZ, maxZ;
-			float pad = (HITBOX_PAD / 8) + (bad_guy_box_eye.scale.x / 2) * 0;
+			float pad = (HITBOX_PAD / 8.0f) + (bad_guy_box_eye.scale.x / 2.0f) * 0.0f;
 			computeBounds(minX, maxX, minZ, maxZ, pad, bad_guy.Position);
 			bad_guy.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
 		}
@@ -935,8 +952,12 @@ int main() {
 }
 
 void doorAnimationStep(DoorStage stage) {
-	if (door_stage > stage && door_anim[stage] < 1.0f) {
-		door_anim[stage] = min(1.0f, door_anim[stage] + delta_time / 2);
+	doorAnimationStep(stage, 1.0f);
+}
+
+void doorAnimationStep(DoorStage stage, float max) {
+	if (door_stage > stage && door_anim[stage] < max) {
+		door_anim[stage] = min(max, door_anim[stage] + delta_time / 2);
 	}
 }
 
@@ -984,54 +1005,47 @@ void processInput(GLFWwindow *window) {
 
 		// Buttons
 		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && input_delay == 0) {
-			if (checkBoxRange(button_1_box, BTN_RANGE)) {
+			if (checkBoxRange(button_1_box, BTN_RANGE) && !button_1_pressed) {
 				//toggle button 1 (wood door)
 				input_delay = INPUT_MAX;
-				button_pressed[WOOD] = true;
-				if (door_stage == WOOD) {
-					door_stage = BRICK;
-				}
-			} else if (checkBoxRange(button_2_box_brick, BTN_RANGE)) {
+				button_1_pressed = true;
+				door_stage = BRICK;
+			} else if (checkBoxRange(button_2_box_brick, BTN_RANGE) && !button_2_brick_pressed) {
 				//toggle button 2 (brick door)
 				input_delay = INPUT_MAX;
-				button_pressed[BRICK] = true;
-				if (door_stage == BRICK) {
-					door_stage = MARBLE;
-				}
-			} else if (checkBoxRange(button_2_box_metal, BTN_RANGE)) {
+				button_2_brick_pressed = true;
+				door_stage = MARBLE;
+			} else if (checkBoxRange(button_2_box_metal, BTN_RANGE) && !button_2_metal_pressed) {
 				// false button2 (metal)
 				input_delay = INPUT_MAX;
 				button_2_metal_pressed = true;
-			} else if (checkBoxRange(button_2_box_wood, BTN_RANGE)) {
+			} else if (checkBoxRange(button_2_box_wood, BTN_RANGE) && !button_2_wood_pressed) {
 				// false button2 (wood)
 				input_delay = INPUT_MAX;
 				button_2_wood_pressed = true;
-			} else if (checkBoxRange(button_3_box_3, BTN_RANGE)) {
+			} else if (checkBoxRange(button_3_box_3, BTN_RANGE) && !button_3_3_pressed) {
 				// toggle button 3 (marble graffiti door)
 				input_delay = INPUT_MAX;
-				button_pressed[MARBLE] = true;
-				if (door_stage == MARBLE) {
-					door_stage = METAL;
-				}
-			} else if (checkBoxRange(button_3_box_2, BTN_RANGE)) {
+				button_3_3_pressed = true;
+				door_stage = METAL;
+			} else if (checkBoxRange(button_3_box_2, BTN_RANGE) && !button_3_2_pressed) {
 				// false button3 (1+2=2)
 				input_delay = INPUT_MAX;
 				button_3_2_pressed = true;
-			} else if (checkBoxRange(button_3_box_4, BTN_RANGE)) {
+			} else if (checkBoxRange(button_3_box_4, BTN_RANGE) && !button_3_4_pressed) {
 				// false button3 (1+2=4)
 				input_delay = INPUT_MAX;
 				button_3_4_pressed = true;
-			} else if (
-				checkBoxRange(button_4_box_1, BTN_RANGE)
-				|| checkBoxRange(button_4_box_2, BTN_RANGE)
-				|| checkBoxRange(button_4_box_3, BTN_RANGE)
-			) {
-				// toggle button 4's (all of them) (metal door)
+			} else if (checkBoxRange(button_4_box_1, BTN_RANGE) && !button_4_1_pressed) {
+				// toggle button 4 1 (grass)
 				input_delay = INPUT_MAX;
-				button_pressed[METAL] = true;
-				if (door_stage == METAL) {
-					door_stage = FINISH;
-				}
+				button_4_1_pressed = true;
+				door_stage = FINISH;
+			} else if (checkBoxRange(button_4_box_2, BTN_RANGE) && !button_4_2_pressed) {
+				// toggle button 4 2 (road)
+				input_delay = INPUT_MAX;
+				button_4_2_pressed = true;
+				door_stage = FINISH;
 			}
 		}
 	} else {
@@ -1089,14 +1103,16 @@ void initialiseState() {
 	lamp_carrying = false;
 	light_pos = LIGHT_INITIAL_POS;
 
-	//Toggle (Animation or states)
-	for (int i = 0; i < 4; i++) {
-		button_pressed[i] = false;
-	}
+	// Button statesbool button_1_pressed;
+	button_1_pressed = false;
+	button_2_brick_pressed = false;
 	button_2_metal_pressed = false;
 	button_2_wood_pressed = false;
 	button_3_2_pressed = false;
+	button_3_3_pressed = false;
 	button_3_4_pressed = false;
+	button_4_1_pressed = false;
+	button_4_2_pressed = false;
 
 	perspective_proj = true;
 
@@ -1115,13 +1131,14 @@ void initialiseState() {
 	colliders[1] = &brick_door;
 	colliders[2] = &marble_door;
 	colliders[3] = &metal_door_bottom;
+	//colliders_len = 4;
 
 	game_stage = PLAYING;
 }
 
 void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad, glm::vec3 pos) {
 	// Start with bounds of static walls
-	minX = left_wal.getPositiveBounds().x + pad;
+	minX = left_wall.getPositiveBounds().x + pad;
 	maxX = right_wall.getNegativeBounds().x - pad;
 	minZ = floor_box.getNegativeBounds().z + pad;
 	maxZ = floor_box.getPositiveBounds().z - pad;
@@ -1129,8 +1146,6 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad
 	for (int i = 0; i < colliders_len; i++) {
 		glm::vec3 wallMin = colliders[i]->getNegativeBounds();
 		glm::vec3 wallMax = colliders[i]->getPositiveBounds();
-
-
 
 		if (wallMin.x < pos.x && pos.x < wallMax.x) {
 			// Make sure camera is within the x range of the wall
@@ -1149,11 +1164,11 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad
 			// Player has a wall to their left/right (z axis)
 
 			if (pos.x > wallMax.x && pos.y > wallMin.y) {
-				// Try to walk through from +ve z side
+				// Try to walk through from +ve x side
 				minX = max(minX, wallMax.x + pad);
 			}
-			if (pos.z < wallMin.x && pos.y > wallMin.y) {
-				// Try to walk through from -ve z side
+			if (pos.x < wallMin.x && pos.y > wallMin.y) {
+				// Try to walk through from -ve x side
 				maxX = min(maxX, wallMin.x - pad);
 			}
 		}
