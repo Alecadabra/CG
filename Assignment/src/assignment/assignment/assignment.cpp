@@ -21,6 +21,59 @@ unsigned int tex_marble2_graffiti_specular, tex_graffiti_2_specular,
 
 unsigned int tex_win, tex_win_specular, tex_lose, tex_lose_specular;
 
+// Boxes -----------------------------------------------------------------------
+
+// Staticlly transformed boxes
+Box floor_box(&tex_marble_diffuse, &tex_marble_specular, true);
+Box roof_box(&tex_marble_diffuse, &tex_marble_specular, true);
+Box right_wall(&tex_marble_diffuse, &tex_marble_specular, true);
+Box left_wall(&tex_marble_diffuse, &tex_marble_specular, true);
+Box back_wall(&tex_marble_diffuse, &tex_marble_specular, true);
+Box front_wall(&tex_marble_diffuse, &tex_marble_specular, true);
+
+// Win area
+Box win_square(&tex_green_diffuse, &tex_metal_specular, true);
+Box win_pedestal_col(&tex_marble_diffuse, &tex_marble_specular, true);
+Box win_pedestal_base(&tex_marble_diffuse, &tex_marble_specular, true);
+Box win_pedestal_foot(&tex_marble_diffuse, &tex_marble_specular, true);
+
+// Bad guy
+Box bad_guy_box_eye(&tex_red_bright_diffuse, &tex_marble_specular);
+Box bad_guy_box_back(&tex_marble2_diffuse, &tex_marble2_specular);
+Box bad_guy_box_stem(&tex_marble2_diffuse, &tex_marble2_specular);
+
+// Button boxes
+Box button_1_box(&tex_green_diffuse, &tex_metal_specular);
+Box button_2_box_brick(&tex_brickwall_diffuse, &tex_brickwall_specular);
+Box button_2_box_metal(&tex_metal_diffuse, &tex_metal_specular);
+Box button_2_box_wood(&tex_wood_diffuse, &tex_wood_specular);
+Box button_3_box_2(&tex_graffiti_2_diffuse, &tex_graffiti_2_specular);
+Box button_3_box_3(&tex_graffiti_3_diffuse, &tex_graffiti_3_specular);
+Box button_3_box_4(&tex_graffiti_4_diffuse, &tex_graffiti_4_specular);
+Box button_4_box_1(&tex_grass_diffuse, &tex_grass_specular);
+Box button_4_box_2(&tex_street_diffuse, &tex_street_specular);
+
+// Door boxes
+Box wood_door(&tex_wood_diffuse, &tex_wood_specular);
+Box brick_door(&tex_brickwall_diffuse, &tex_brickwall_specular);
+Box marble_door(&tex_marble2_graffiti_diffuse, &tex_marble2_graffiti_specular);
+Box metal_door_bottom(&tex_metal_diffuse, &tex_metal_specular);
+Box metal_door_top(&tex_metal_diffuse, &tex_metal_specular);
+Box metal_door_left(&tex_metal_diffuse, &tex_metal_specular);
+Box metal_door_right(&tex_metal_diffuse, &tex_metal_specular);
+
+// Door details
+Box wood_door_tl(&tex_wood_diffuse, &tex_wood_specular);
+Box wood_door_tr(&tex_wood_diffuse, &tex_wood_specular);
+Box wood_door_bl(&tex_wood_diffuse, &tex_wood_specular);
+Box wood_door_br(&tex_wood_diffuse, &tex_wood_specular);
+Box brick_door_b(&tex_brickwall_diffuse, &tex_brickwall_specular);
+Box brick_door_t(&tex_brickwall_diffuse, &tex_brickwall_specular);
+
+// Win/lose condition boxes
+Box lose_box(&tex_lose, &tex_lose_specular);
+Box win_box(&tex_win, &tex_win_specular);
+
 // Constant settings -----------------------------------------------------------
 
 // Window size in pixels
@@ -32,7 +85,7 @@ const float NEAR_CLIP = 0.1f;
 const float FAR_CLIP = 50.0f;
 
 // Padding - minimum distance the camera can be from a collidable surface
-const float HITBOX_PAD = 0.25f;
+const float HITBOX_PAD = 0.15f;
 
 // Minimum range the camera has to be to push a physical button
 const float BTN_RANGE = 0.8f;
@@ -98,6 +151,9 @@ bool perspective_proj;
 // If true, ambient light is increased dramatically
 bool extra_bright;
 
+// Show the area that the player can move within
+bool show_bounds;
+
 // Which door is next
 enum DoorStage {
 	WOOD = 0,
@@ -108,8 +164,35 @@ enum DoorStage {
 };
 DoorStage door_stage;
 
-Box* colliders[4];
-int colliders_len = 4;
+Box* colliders[] = {
+	// Walls
+	&left_wall,
+	&right_wall,
+	&back_wall,
+	&front_wall,
+	// Doors
+	&wood_door,
+	&brick_door,
+	&marble_door,
+	&metal_door_bottom,
+	// Buttons
+	&button_1_box,
+	&button_2_box_brick,
+	&button_2_box_metal,
+	&button_2_box_wood,
+	&button_3_box_2,
+	&button_3_box_3,
+	&button_3_box_4,
+	&button_4_box_1,
+	&button_4_box_2,
+	// Door details
+	&wood_door_bl,
+	&wood_door_br,
+	&brick_door_b
+};
+//bool ignore_colliders[20];
+int colliders_len = 20;
+
 
 // Door animations
 float door_anim[4];
@@ -120,51 +203,6 @@ enum GameStage {
 	LOST
 };
 GameStage game_stage;
-
-// Boxes -----------------------------------------------------------------------
-
-// Staticlly transformed boxes
-Box floor_box(&tex_marble_diffuse, &tex_marble_specular, true);
-Box roof_box(&tex_marble_diffuse, &tex_marble_specular, true);
-Box right_wall(&tex_marble_diffuse, &tex_marble_specular, true);
-Box left_wall(&tex_marble_diffuse, &tex_marble_specular, true);
-Box back_wall(&tex_marble_diffuse, &tex_marble_specular, true);
-Box front_wall(&tex_marble_diffuse, &tex_marble_specular, true);
-
-// Win area
-Box win_square(&tex_green_diffuse, &tex_metal_specular, true);
-Box win_pedestal_col(&tex_marble_diffuse, &tex_marble_specular, true);
-Box win_pedestal_base(&tex_marble_diffuse, &tex_marble_specular, true);
-Box win_trophy(&tex_curtin_diffuse, &tex_curtin_specular, true);
-
-// Bad guy
-Box bad_guy_box_eye(&tex_red_bright_diffuse, &tex_marble_specular);
-Box bad_guy_box_back(&tex_marble2_diffuse, &tex_marble2_specular);
-Box bad_guy_box_stem(&tex_marble2_diffuse, &tex_marble2_specular);
-
-// Button boxes
-Box button_1_box(&tex_green_diffuse, &tex_metal_specular);
-Box button_2_box_brick(&tex_brickwall_diffuse, &tex_brickwall_specular);
-Box button_2_box_metal(&tex_metal_diffuse, &tex_metal_specular);
-Box button_2_box_wood(&tex_wood_diffuse, &tex_wood_specular);
-Box button_3_box_2(&tex_graffiti_2_diffuse, &tex_graffiti_2_specular);
-Box button_3_box_3(&tex_graffiti_3_diffuse, &tex_graffiti_3_specular);
-Box button_3_box_4(&tex_graffiti_4_diffuse, &tex_graffiti_4_specular);
-Box button_4_box_1(&tex_grass_diffuse, &tex_grass_specular);
-Box button_4_box_2(&tex_street_diffuse, &tex_street_specular);
-
-// Door boxes
-Box woodDoor(&tex_wood_diffuse, &tex_wood_specular);
-Box brick_door(&tex_brickwall_diffuse, &tex_brickwall_specular);
-Box marble_door(&tex_marble2_graffiti_diffuse, &tex_marble2_graffiti_specular);
-Box metal_door_bottom(&tex_metal_diffuse, &tex_metal_specular);
-Box metal_door_top(&tex_metal_diffuse, &tex_metal_specular);
-Box metal_door_left(&tex_metal_diffuse, &tex_metal_specular);
-Box metal_door_right(&tex_metal_diffuse, &tex_metal_specular);
-
-// Win/lose condition boxes
-Box lose_box(&tex_lose, &tex_lose_specular);
-Box win_box(&tex_win, &tex_win_specular);
 
 // Function forward declarations -----------------------------------------------
 
@@ -290,10 +328,10 @@ int main() {
 	tex_grass_diffuse = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
 	tex_grass_specular = loadTexture(FileSystem::getPath("resources/textures/grass_specular.jpg").c_str());
 	tex_marble_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
-	//tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
-	tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble_specular.jpg").c_str());
-	tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
-	tex_curtin_specular = loadTexture(FileSystem::getPath("resources/textures/curtin_specular.jpg").c_str());
+	tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
+	//tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble_specular.jpg").c_str());
+	//tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
+	//tex_curtin_specular = loadTexture(FileSystem::getPath("resources/textures/curtin_specular.jpg").c_str());
 	tex_red_dark_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_dark.jpg").c_str());
 	tex_red_dark_specular = loadTexture(FileSystem::getPath("resources/textures/red_dark_specular.jpg").c_str());
 	tex_red_bright_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_bright.jpg").c_str());
@@ -312,7 +350,7 @@ int main() {
 	tex_graffiti_3_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_3_specular.jpg").c_str());
 	tex_graffiti_4_diffuse = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_diffuse.jpg").c_str());
 	tex_graffiti_4_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_specular.jpg").c_str());
-	tex_night_sky = loadTexture(FileSystem::getPath("resources/textures/night_sky.jpg").c_str());
+	//tex_night_sky = loadTexture(FileSystem::getPath("resources/textures/night_sky.jpg").c_str());
 	tex_win = loadTexture(FileSystem::getPath("resources/textures/win.png").c_str());
 	tex_win_specular = loadTexture(FileSystem::getPath("resources/textures/win_specular.png").c_str());
 	tex_lose = loadTexture(FileSystem::getPath("resources/textures/lose.png").c_str());
@@ -358,8 +396,8 @@ int main() {
 		front_wall.scale = glm::vec3(dimen, dimen, width);
 
 		// win square
-		win_square.translate = glm::vec3(0.0f, 0.025f, -length / 2 + zOffset + dimen);
-		win_square.scale = glm::vec3(dimen / 1.5f, 0.05f, dimen / 1.5f);
+		win_square.translate = glm::vec3(0.0f, 0.0125f, -length / 2 + zOffset + dimen);
+		win_square.scale = glm::vec3(dimen / 1.5f, 0.025f, dimen / 1.5f);
 
 		// win pedestal
 		win_pedestal_col.scale = glm::vec3(0.25f, 0.45f, 0.25f);
@@ -370,10 +408,9 @@ int main() {
 		win_pedestal_base.translate = win_square.translate;
 		win_pedestal_base.translate.y += win_pedestal_col.scale.y + win_pedestal_base.scale.y / 2;
 
-		win_trophy.scale = glm::vec3(0.2f, 0.2f, 0.2f);
-		win_trophy.translate = win_square.translate;
-		win_trophy.translate.y += win_pedestal_col.scale.y + win_pedestal_base.scale.y + win_trophy.scale.y / 2;
-		win_trophy.xAngle = 90.0f;
+		win_pedestal_foot.scale = glm::vec3(0.33f, 0.20f, 0.33f);
+		win_pedestal_foot.translate = win_square.translate;
+		win_pedestal_foot.translate.y += win_pedestal_foot.scale.y / 2;
 	}
 	
 
@@ -390,7 +427,7 @@ int main() {
 
 	// doors
 	float doorZScale = 0.8f;
-	woodDoor.scale = glm::vec3(3.0f, 3.0f, doorZScale);
+	wood_door.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 	brick_door.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 	marble_door.scale = glm::vec3(3.0f, 3.0f, doorZScale);
 	// metal door
@@ -556,7 +593,7 @@ int main() {
 		win_square.render(lighting_shader, VAO_box);
 		win_pedestal_col.render(lighting_shader, VAO_box);
 		win_pedestal_base.render(lighting_shader, VAO_box);
-		win_trophy.render(lighting_shader, VAO_box);
+		win_pedestal_foot.render(lighting_shader, VAO_box);
 
 
 		// Doors ---------------------------------------------------------------
@@ -565,39 +602,34 @@ int main() {
 		{
 			float anim = door_anim[DoorStage::WOOD];
 			float miniBoxDim = 0.8f;
-			float bottomY = sin(glm::radians(anim * 90.0f)) * (woodDoor.scale.y - miniBoxDim * 2);
+			float bottomY = sin(glm::radians(anim * 90.0f)) * (wood_door.scale.y - miniBoxDim * 2);
 
-			Box topLeft(&tex_wood_diffuse, &tex_wood_specular);
-			Box topRight(&tex_wood_diffuse, &tex_wood_specular);
-			Box botLeft(&tex_wood_diffuse, &tex_wood_specular);
-			Box botRight(&tex_wood_diffuse, &tex_wood_specular);
-
-			Box* miniBoxes[] = { &topLeft, &topRight, &botLeft, &botRight };
+			Box* miniBoxes[] = { &wood_door_tl, &wood_door_tr, &wood_door_bl, &wood_door_br };
 
 			for (int i = 0; i < 4; i++) {
 				Box* curr = miniBoxes[i];
 				curr->scale = glm::vec3(miniBoxDim, miniBoxDim, 0.07f);
-				curr->translate.z = -5.0f + woodDoor.scale.z / 2 + curr->scale.z / 2;
+				curr->translate.z = -5.0f + wood_door.scale.z / 2 + curr->scale.z / 2;
 				if (i < 2) {
 					// Top
-					curr->translate.y = woodDoor.scale.y - curr->scale.y / 2;
+					curr->translate.y = wood_door.scale.y - curr->scale.y / 2;
 				} else {
 					// Bottom
 					curr->translate.y = curr->scale.y / 2 + bottomY;
 				}
 				if (i == 0 || i == 2) {
 					// Left
-					curr->translate.x = -woodDoor.scale.x / 2 + curr->scale.x / 2;
+					curr->translate.x = -wood_door.scale.x / 2 + curr->scale.x / 2;
 				} else {
 					// Right
-					curr->translate.x = woodDoor.scale.x / 2 - curr->scale.x / 2;
+					curr->translate.x = wood_door.scale.x / 2 - curr->scale.x / 2;
 				}
 			}
 
-			woodDoor.translate = glm::vec3(0, woodDoor.scale.y / 2 + bottomY, -5.0f);
+			wood_door.translate = glm::vec3(0, wood_door.scale.y / 2 + bottomY, -5.0f);
 
 			doorAnimationStep(WOOD);
-			woodDoor.render(lighting_shader, VAO_box);
+			wood_door.render(lighting_shader, VAO_box);
 			for (int i = 0; i < 4; i++) {
 				miniBoxes[i]->render(lighting_shader, VAO_box);
 			}
@@ -611,27 +643,25 @@ int main() {
 			brick_door.translate = glm::vec3(x, y, -10.0f);
 			brick_door.zAngle = anim * -90.0f;
 			float deltaHeight = sin(glm::radians(anim * anim * 180)) * 2;
-			brick_door.scale.x = woodDoor.scale.x - deltaHeight;
-			brick_door.scale.y = woodDoor.scale.y - deltaHeight;
+			brick_door.scale.x = wood_door.scale.x - deltaHeight;
+			brick_door.scale.y = wood_door.scale.y - deltaHeight;
 
 			// Details
 			float brickHeight = 1.0f;
 			float brickWidth = 0.07f;
-			Box bottomDetail(&tex_brickwall_diffuse, &tex_brickwall_specular);
-			Box topDetail(&tex_brickwall_diffuse, &tex_brickwall_specular);
-			bottomDetail.scale = glm::vec3(3.0f, 3.0f, brickWidth);
-			topDetail.scale = bottomDetail.scale;
-			bottomDetail.translate = glm::vec3(0.0f, -1.5f + brickHeight / 2, brick_door.translate.z + brick_door.scale.z / 2 + brickWidth / 2);
-			topDetail.translate = glm::vec3(0.0f, 4.5f - brickHeight / 2, bottomDetail.translate.z);
+			brick_door_b.scale = glm::vec3(3.0f, 3.0f, brickWidth);
+			brick_door_t.scale = brick_door_b.scale;
+			brick_door_b.translate = glm::vec3(0.0f, -1.5f + brickHeight / 2, brick_door.translate.z + brick_door.scale.z / 2 + brickWidth / 2);
+			brick_door_t.translate = glm::vec3(0.0f, 4.5f - brickHeight / 2, brick_door_b.translate.z);
 
 			// Detail animation
-			bottomDetail.translate.y -= brickHeight * sin(glm::radians(anim * 90.0f));
-			topDetail.translate.y += brickHeight * sin(glm::radians(anim * 90.0f));
+			brick_door_b.translate.y -= brickHeight * sin(glm::radians(anim * 90.0f));
+			brick_door_t.translate.y += brickHeight * sin(glm::radians(anim * 90.0f));
 
 			doorAnimationStep(BRICK);
 			brick_door.render(lighting_shader, VAO_box);
-			bottomDetail.render(lighting_shader, VAO_box);
-			topDetail.render(lighting_shader, VAO_box);
+			brick_door_b.render(lighting_shader, VAO_box);
+			brick_door_t.render(lighting_shader, VAO_box);
 		}
 
 		// Marble graffiti door
@@ -644,16 +674,26 @@ int main() {
 				marble_door.zAngle = 0.0f;
 				marble_door.translate = initialTranslate;
 				marble_door.scale = initialScale;
+				marble_door.translate.y = initialTranslate.y;
+				marble_door.yAngle = 0.0f;
+				marble_door.scale.z = initialScale.z;
 			} else if (anim < 0.3f) {
 				float localAnim = anim / 3.0f * 10.0f;
-				marble_door.scale.x = initialScale.x - (initialScale.x - 1.0f) * sin(glm::radians(localAnim * 90.0f));
+				marble_door.scale.x = initialScale.x - (initialScale.x * 0.9) * sin(glm::radians(localAnim * 90.0f));
 			} else if (anim < 0.6f) {
 				float localAnim = (anim - 0.3f) / 3.0f * 10.0f;
-				marble_door.scale.y = initialScale.y - (initialScale.y - 1.0f) * sin(glm::radians(localAnim * 90.0f));
+				marble_door.scale.y = initialScale.y - (initialScale.y * 0.9) * sin(glm::radians(localAnim * 90.0f));
 			} else {
 				float localAnim = (anim - 0.6f) / 3.0f * 10.0f;
-				marble_door.zAngle = localAnim * 720.0f;
-				marble_door.translate.z = initialTranslate.z + initialTranslate.z * 1.5f * sin(glm::radians(localAnim * 45.0f));
+				marble_door.zAngle = localAnim * 360.0f;
+				marble_door.translate.z = initialTranslate.z + initialTranslate.z * 0.54f * sin(glm::radians(localAnim * 45.0f));
+				marble_door.translate.y = initialTranslate.y - (initialTranslate.y * 0.25) * localAnim * localAnim;
+				marble_door.yAngle += delta_time * 32;
+				marble_door.scale.z = initialScale.z - localAnim * initialScale.x * 0.1f;
+			}
+
+			if (anim == 1.0f) {
+				marble_door.translate.y += (sin(glfwGetTime()) + 1) * 0.3f;
 			}
 
 			doorAnimationStep(MARBLE);
@@ -703,7 +743,7 @@ int main() {
 		{		
 			float x = right_wall.getNegativeBounds().x;
 			float y = BUTTON_HEIGHT;
-			float z = woodDoor.getPositiveBounds().z + 0.5f;
+			float z = wood_door.getPositiveBounds().z + 0.5f;
 
 			button_1_box.translate = glm::vec3(x, y, z);
 
@@ -855,6 +895,52 @@ int main() {
 			float pad = (HITBOX_PAD / 8.0f) + (bad_guy_box_eye.scale.x / 2.0f) * 0.0f;
 			computeBounds(minX, maxX, minZ, maxZ, pad, bad_guy.Position);
 			bad_guy.ProcessKeyboard(FORWARD, delta_time, minX, maxX, minZ, maxZ);
+		}
+
+
+		// Draw bounds
+		if (show_bounds) {
+			float minX, maxX, minZ, maxZ;
+			float pad = HITBOX_PAD / 2;
+
+			computeBounds(minX, maxX, minZ, maxZ, HITBOX_PAD, camera.Position);
+
+			Box boxMinX(&tex_green_diffuse, &tex_green_specular);
+			Box boxMaxX(&tex_green_diffuse, &tex_green_specular);
+			Box boxMinZ(&tex_green_diffuse, &tex_green_specular);
+			Box boxMaxZ(&tex_green_diffuse, &tex_green_specular);
+
+			boxMinX.translate.x = minX - pad;
+			boxMaxX.translate.x = maxX + pad;
+			boxMinZ.translate.z = minZ - pad;
+			boxMaxZ.translate.z = maxZ + pad;
+
+			Box* bounds[] = { &boxMinX, &boxMaxX, &boxMinZ, &boxMaxZ };
+
+			float xDepth = maxX - minX;
+			float zDepth = maxZ - minZ;
+
+			float xMiddle = (minX + maxX) / 2;
+			float zMiddle = (minZ + maxZ) / 2;
+
+			for (int i = 0; i < 4; i++) {
+				Box* curr = bounds[i];
+
+				curr->scale = glm::vec3(pad / 2);
+				curr->translate.y = pad / 4;
+
+				if (i < 2) {
+					// X
+					curr->scale.z = zDepth + pad * 2;
+					curr->translate.z = zMiddle;
+				} else {
+					// Z
+					curr->scale.x = xDepth + pad * 2;
+					curr->translate.x = xMiddle;
+				}
+
+				curr->render(lighting_shader, VBO_box);
+			}
 		}
 
 		
@@ -1020,7 +1106,7 @@ void processInput(GLFWwindow *window) {
 		}
 
 		// Buttons
-		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && input_delay == 0) {
+		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && input_delay == 0) {
 			if (checkBoxRange(button_1_box, BTN_RANGE) && !button_1_pressed) {
 				//toggle button 1 (wood door)
 				input_delay = INPUT_MAX;
@@ -1064,32 +1150,37 @@ void processInput(GLFWwindow *window) {
 				door_stage = FINISH;
 			}
 		}
-	} else {
-		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && input_delay == 0) {
-			// Reset game
-			initialiseState();
-		}
 	}
 
+	// <R> Restart game
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && input_delay == 0) {
+		initialiseState();
+	}
 
-	// toggle projection mode
+	// <P> Toggle projection mode
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && input_delay == 0) {
 		input_delay = INPUT_MAX;
 		perspective_proj = !perspective_proj;
 	}
 
-	// toggle extra brightness
+	// <O> Toggle extra brightness
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && input_delay == 0) {
 		input_delay = INPUT_MAX;
 		extra_bright = !extra_bright;
 	}
 
-	// increase light brightness radius
+	// <B> Show bounds
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && input_delay == 0) {
+		input_delay = INPUT_MAX;
+		show_bounds = !show_bounds;
+	}
+
+	// <L> Increase light brightness radius
 	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
 		light_radius = min(2.5f, light_radius + delta_time * 2.0f);
 	}
 
-	// decrease light brightness radius
+	// <K> Decrease light brightness radius
 	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
 		light_radius = max(0.0f, light_radius - delta_time * 2.0f);
 	}
@@ -1134,6 +1225,8 @@ void initialiseState() {
 
 	extra_bright = false;
 
+	show_bounds = false;
+
 	// Which door is next
 	door_stage = WOOD;
 
@@ -1143,49 +1236,58 @@ void initialiseState() {
 	}
 
 	// Colliders
-	colliders[0] = &woodDoor;
-	colliders[1] = &brick_door;
-	colliders[2] = &marble_door;
-	colliders[3] = &metal_door_bottom;
-	//colliders_len = 4;
+	/*for (int i = 0; i < colliders_len; i++) {
+		ignore_colliders[i] = false;
+	}*/
 
 	game_stage = PLAYING;
 }
 
 void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad, glm::vec3 pos) {
-	// Start with bounds of static walls
-	minX = left_wall.getPositiveBounds().x + pad;
-	maxX = right_wall.getNegativeBounds().x - pad;
-	minZ = floor_box.getNegativeBounds().z + pad;
-	maxZ = floor_box.getPositiveBounds().z - pad;
+	// Start with large bounds
+	minX = pos.x - 0.7f;
+	maxX = pos.x + 0.7f;
+	minZ = pos.z - 0.7f;
+	maxZ = pos.z + 0.7f;
 
 	for (int i = 0; i < colliders_len; i++) {
-		glm::vec3 wallMin = colliders[i]->getNegativeBounds();
-		glm::vec3 wallMax = colliders[i]->getPositiveBounds();
+		glm::vec3 boxMin = colliders[i]->getNegativeBounds();
+		glm::vec3 boxMax = colliders[i]->getPositiveBounds();
 
-		if (wallMin.x < pos.x && pos.x < wallMax.x) {
-			// Make sure camera is within the x range of the wall
+		// Only concerned with boxes within the current min/max
+		if (boxMin.x > minX || boxMax.x < maxX || boxMin.z > minZ || boxMax.z < maxZ) {
 
-			if (pos.z > wallMax.z && pos.y > wallMin.y) {
-				// Try to walk through from +ve z side
-				minZ = max(minZ, wallMax.z + pad);
-			}
-			if (pos.z < wallMin.z && pos.y > wallMin.y) {
-				// Try to walk through from -ve z side
-				maxZ = min(maxZ, wallMin.z - pad);
-			}
-		}
+			// Check the pos is not under or above the box
+			if (pos.y > boxMin.y && boxMax.y > pad) {
 
-		if (wallMin.z < pos.z && pos.z < wallMax.z) {
-			// Player has a wall to their left/right (z axis)
+				// Check the pos is within the x range of the wall
+				// Ie. box is infront/behind them
+				if (boxMin.x < pos.x && pos.x < boxMax.x) {
 
-			if (pos.x > wallMax.x && pos.y > wallMin.y) {
-				// Try to walk through from +ve x side
-				minX = max(minX, wallMax.x + pad);
-			}
-			if (pos.x < wallMin.x && pos.y > wallMin.y) {
-				// Try to walk through from -ve x side
-				maxX = min(maxX, wallMin.x - pad);
+					// Try to walk through from +ve z side
+					if (pos.z > boxMax.z) {
+						minZ = max(minZ, boxMax.z + pad);
+					}
+					// Try to walk through from -ve z side
+					if (pos.z < boxMin.z) {
+						maxZ = min(maxZ, boxMin.z - pad);
+					}
+				}
+
+				// Check the pos is within the z range of the box
+				// Ie. box is to their left/right
+				if (boxMin.z < pos.z && pos.z < boxMax.z) {
+					// Player has a wall to their left/right (z axis)
+
+					// Try to walk through from +ve x side
+					if (pos.x > boxMax.x) {
+						minX = max(minX, boxMax.x + pad);
+					}
+					// Try to walk through from -ve x side
+					if (pos.x < boxMin.x) {
+						maxX = min(maxX, boxMin.x - pad);
+					}
+				}
 			}
 		}
 	}
