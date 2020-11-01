@@ -614,8 +614,24 @@ int main() {
 			brick_door.scale.x = woodDoor.scale.x - deltaHeight;
 			brick_door.scale.y = woodDoor.scale.y - deltaHeight;
 
+			// Details
+			float brickHeight = 1.0f;
+			float brickWidth = 0.07f;
+			Box bottomDetail(&tex_brickwall_diffuse, &tex_brickwall_specular);
+			Box topDetail(&tex_brickwall_diffuse, &tex_brickwall_specular);
+			bottomDetail.scale = glm::vec3(3.0f, 3.0f, brickWidth);
+			topDetail.scale = bottomDetail.scale;
+			bottomDetail.translate = glm::vec3(0.0f, -1.5f + brickHeight / 2, brick_door.translate.z + brick_door.scale.z / 2 + brickWidth / 2);
+			topDetail.translate = glm::vec3(0.0f, 4.5f - brickHeight / 2, bottomDetail.translate.z);
+
+			// Detail animation
+			bottomDetail.translate.y -= brickHeight * sin(glm::radians(anim * 90.0f));
+			topDetail.translate.y += brickHeight * sin(glm::radians(anim * 90.0f));
+
 			doorAnimationStep(BRICK);
 			brick_door.render(lighting_shader, VAO_box);
+			bottomDetail.render(lighting_shader, VAO_box);
+			topDetail.render(lighting_shader, VAO_box);
 		}
 
 		// Marble graffiti door
