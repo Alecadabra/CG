@@ -1235,11 +1235,6 @@ void initialiseState() {
 		door_anim[i] = 0.0f;
 	}
 
-	// Colliders
-	/*for (int i = 0; i < colliders_len; i++) {
-		ignore_colliders[i] = false;
-	}*/
-
 	game_stage = PLAYING;
 }
 
