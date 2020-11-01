@@ -23,6 +23,7 @@ uniform vec3 viewPos;
 uniform Material material;
 uniform Light light;
 
+// Radius of light source
 uniform float radius;
 
 void main()

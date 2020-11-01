@@ -2,24 +2,22 @@
 
 // Textures --------------------------------------------------------------------
 
-unsigned int tex_wood_diffuse, tex_brickwall_diffuse, tex_metal_diffuse,
-	tex_marble2_diffuse, tex_street_diffuse, tex_grass_diffuse,
-	tex_marble_diffuse, tex_curtin_diffuse, tex_night_sky;
-unsigned int tex_wood_specular, tex_brickwall_specular, tex_metal_specular,
-	tex_marble2_specular, tex_street_specular, tex_grass_specular,
-	tex_marble_specular, tex_curtin_specular;
-
-unsigned int tex_red_dark_diffuse, tex_red_bright_diffuse, tex_red_diffuse,
-	tex_green_diffuse, tex_blue_diffuse;
-unsigned int tex_red_dark_specular, tex_red_bright_specular, tex_red_specular,
-	tex_green_specular, tex_blue_specular;
-
-unsigned int tex_marble2_graffiti_diffuse, tex_graffiti_2_diffuse,
-	tex_graffiti_3_diffuse, tex_graffiti_4_diffuse;
-unsigned int tex_marble2_graffiti_specular, tex_graffiti_2_specular,
-	tex_graffiti_3_specular, tex_graffiti_4_specular;
-
-unsigned int tex_win, tex_win_specular, tex_lose, tex_lose_specular;
+unsigned int tex_marble_diffuse, tex_marble_specular;
+unsigned int tex_wood_diffuse, tex_wood_specular;
+unsigned int tex_brickwall_diffuse, tex_brickwall_specular;
+unsigned int tex_marble2_diffuse, tex_marble2_specular;
+unsigned int tex_metal_diffuse, tex_metal_specular;
+unsigned int tex_marble2_graffiti_diffuse, tex_marble2_graffiti_specular;
+unsigned int tex_graffiti_2_diffuse, tex_graffiti_2_specular;
+unsigned int tex_graffiti_3_diffuse, tex_graffiti_3_specular;
+unsigned int tex_graffiti_4_diffuse, tex_graffiti_4_specular;
+unsigned int tex_street_diffuse, tex_street_specular;
+unsigned int tex_grass_diffuse, tex_grass_specular;
+unsigned int tex_win_diffuse, tex_win_specular;
+unsigned int tex_lose_diffuse, tex_lose_specular;
+unsigned int tex_red_dark_diffuse, tex_red_dark_specular;
+unsigned int tex_red_bright_diffuse, tex_red_bright_specular;
+unsigned int tex_green_diffuse, tex_green_specular;
 
 // Boxes -----------------------------------------------------------------------
 
@@ -32,7 +30,7 @@ Box back_wall(&tex_marble_diffuse, &tex_marble_specular, true);
 Box front_wall(&tex_marble_diffuse, &tex_marble_specular, true);
 
 // Win area
-Box win_square(&tex_green_diffuse, &tex_metal_specular, true);
+Box win_square(&tex_green_diffuse, &tex_green_specular, true);
 Box win_pedestal_col(&tex_marble_diffuse, &tex_marble_specular, true);
 Box win_pedestal_base(&tex_marble_diffuse, &tex_marble_specular, true);
 Box win_pedestal_foot(&tex_marble_diffuse, &tex_marble_specular, true);
@@ -71,8 +69,8 @@ Box brick_door_b(&tex_brickwall_diffuse, &tex_brickwall_specular);
 Box brick_door_t(&tex_brickwall_diffuse, &tex_brickwall_specular);
 
 // Win/lose condition boxes
-Box lose_box(&tex_lose, &tex_lose_specular);
-Box win_box(&tex_win, &tex_win_specular);
+Box lose_box(&tex_lose_diffuse, &tex_lose_specular);
+Box win_box(&tex_win_diffuse, &tex_win_specular);
 
 // Constant settings -----------------------------------------------------------
 
@@ -190,9 +188,7 @@ Box* colliders[] = {
 	&wood_door_br,
 	&brick_door_b
 };
-//bool ignore_colliders[20];
 int colliders_len = 20;
-
 
 // Door animations
 float door_anim[4];
@@ -220,7 +216,7 @@ unsigned int loadTexture(char const*);
 // Program ---------------------------------------------------------------------
 
 int main() {
-	// glfw: initialize and configure
+	// GFLW Initialisation
 	// ------------------------------
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -230,7 +226,7 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-	// glfw window creation
+	// GFLW window creation
 	// --------------------
 	GLFWwindow* window = glfwCreateWindow(
 		SCR_WIDTH, SCR_HEIGHT, "Alec OpenGL Assignment", nullptr, nullptr
@@ -246,7 +242,7 @@ int main() {
     glfwSetScrollCallback(window, scrollCallback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	// glad: load all OpenGL function pointers
+	// GLAD: load all OpenGL function pointers
 	// ---------------------------------------
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to initialize GLAD" << std::endl;
@@ -257,10 +253,10 @@ int main() {
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
 
-	// Initialise state
+	// Initialise game state
 	initialiseState();
 
-	// build and compile our shader program
+	// build and compile shader program
 	// ------------------------------------
 	Shader lighting_shader(
 		FileSystem::getPath("src/assignment/assignment/vertex.vs").c_str(),
@@ -300,13 +296,12 @@ int main() {
 	glEnableVertexAttribArray(2);
 
 
-	// second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
+	// Configure the light's VAO
 	unsigned int VAO_light;
 	glGenVertexArrays(1, &VAO_light);
 	glBindVertexArray(VAO_light);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO_box);
-	// note that we update the lamp's position attribute's stride to reflect the updated buffer data
 	glVertexAttribPointer(
 		0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0
 	);
@@ -315,6 +310,8 @@ int main() {
 
 	// load and create textures
 	// -------------------------
+	tex_marble_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
+	tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
 	tex_wood_diffuse = loadTexture(FileSystem::getPath("resources/textures/wood2.jpg").c_str());
 	tex_wood_specular = loadTexture(FileSystem::getPath("resources/textures/wood2_specular.jpg").c_str());
 	tex_brickwall_diffuse = loadTexture(FileSystem::getPath("resources/textures/brickwall.jpg").c_str());
@@ -327,21 +324,11 @@ int main() {
 	tex_street_specular = loadTexture(FileSystem::getPath("resources/textures/street_specular.png").c_str());
 	tex_grass_diffuse = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str());
 	tex_grass_specular = loadTexture(FileSystem::getPath("resources/textures/grass_specular.jpg").c_str());
-	tex_marble_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
-	tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
-	//tex_marble_specular = loadTexture(FileSystem::getPath("resources/textures/marble_specular.jpg").c_str());
-	//tex_curtin_diffuse = loadTexture(FileSystem::getPath("resources/textures/curtin.jpg").c_str());
-	//tex_curtin_specular = loadTexture(FileSystem::getPath("resources/textures/curtin_specular.jpg").c_str());
 	tex_red_dark_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_dark.jpg").c_str());
 	tex_red_dark_specular = loadTexture(FileSystem::getPath("resources/textures/red_dark_specular.jpg").c_str());
 	tex_red_bright_diffuse = loadTexture(FileSystem::getPath("resources/textures/red_bright.jpg").c_str());
 	tex_red_bright_specular = loadTexture(FileSystem::getPath("resources/textures/red_bright_specular.jpg").c_str());
-	//tex_red_diffuse = loadTexture(FileSystem::getPath("resources/textures/red.jpg").c_str());
-	//tex_red_specular = loadTexture(FileSystem::getPath("resources/textures/red_specular.jpg").c_str());
 	tex_green_diffuse = loadTexture(FileSystem::getPath("resources/textures/green.jpg").c_str());
-	//tex_green_specular = loadTexture(FileSystem::getPath("resources/textures/green_specular.jpg").c_str());
-	//tex_blue_diffuse = loadTexture(FileSystem::getPath("resources/textures/blue.jpg").c_str());
-	//tex_blue_specular = loadTexture(FileSystem::getPath("resources/textures/blue_specular.jpg").c_str());
 	tex_marble2_graffiti_diffuse = loadTexture(FileSystem::getPath("resources/textures/marble2_graffiti.jpg").c_str());
 	tex_marble2_graffiti_specular = loadTexture(FileSystem::getPath("resources/textures/marble2_graffiti_specular.jpg").c_str());
 	tex_graffiti_2_diffuse = loadTexture(FileSystem::getPath("resources/textures/graffiti_2_diffuse.jpg").c_str());
@@ -350,10 +337,9 @@ int main() {
 	tex_graffiti_3_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_3_specular.jpg").c_str());
 	tex_graffiti_4_diffuse = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_diffuse.jpg").c_str());
 	tex_graffiti_4_specular = loadTexture(FileSystem::getPath("resources/textures/graffiti_4_specular.jpg").c_str());
-	//tex_night_sky = loadTexture(FileSystem::getPath("resources/textures/night_sky.jpg").c_str());
-	tex_win = loadTexture(FileSystem::getPath("resources/textures/win.png").c_str());
+	tex_win_diffuse = loadTexture(FileSystem::getPath("resources/textures/win.png").c_str());
 	tex_win_specular = loadTexture(FileSystem::getPath("resources/textures/win_specular.png").c_str());
-	tex_lose = loadTexture(FileSystem::getPath("resources/textures/lose.png").c_str());
+	tex_lose_diffuse = loadTexture(FileSystem::getPath("resources/textures/lose.png").c_str());
 	tex_lose_specular = loadTexture(FileSystem::getPath("resources/textures/lose_specular.png").c_str());
 
 	//shader configuration -----------------------------------------------------
@@ -362,7 +348,7 @@ int main() {
 	lighting_shader.setInt("material.specular", 1);
 
 
-	// set static transformations ----------------------------------------------
+	// Set inital transformations ----------------------------------------------
 
 	// Walls
 	{
@@ -535,8 +521,7 @@ int main() {
 			// Game over screen - move light to a bit behind player
 			light_pos = camera.Position - camera.Front;
 		} else {
-			double time = glfwGetTime();
-			light_pos = glm::vec3(0.0f, 0.3f + sin(glm::radians(time * 180)) / 7.0f, -0.2f);
+			light_pos = glm::vec3(0.0f, 0.3f + sin(glm::radians(currentFrame * 180)) / 7.0f, -0.2f);
 			lamp_carrying = glm::length(camera.Position - light_pos) < BTN_RANGE;
 		}
 		lighting_shader.use();
@@ -550,7 +535,7 @@ int main() {
 			lighting_shader.setVec3("light.ambient", 0.08f, 0.08f, 0.08f);
 		}
 
-		float brightness = abs(cos(glfwGetTime()) / 2 ) + 1.2f;
+		float brightness = abs(cos(currentFrame) / 2 ) + 1.2f;
 		lighting_shader.setVec3("light.diffuse", glm::vec3(brightness));
 		lighting_shader.setVec3("light.specular", glm::vec3(brightness));
 
@@ -693,7 +678,7 @@ int main() {
 			}
 
 			if (anim == 1.0f) {
-				marble_door.translate.y += (sin(glfwGetTime()) + 1) * 0.3f;
+				marble_door.translate.y += (sin(currentFrame) + 1) * 0.3f;
 			}
 
 			doorAnimationStep(MARBLE);
@@ -868,7 +853,7 @@ int main() {
 			glm::vec3 direction = glm::normalize(camera.Position - bad_guy.Position);
 			bad_guy.Front = direction;
 
-			bad_guy.CamHeight = CAM_HEIGHT + sin(glfwGetTime() * 2.5f) / 7.0f;
+			bad_guy.CamHeight = CAM_HEIGHT + sin(currentFrame * 2.5f) / 7.0f;
 
 			bad_guy_box_eye.translate = bad_guy.Position;
 			bad_guy_box_eye.yAngle = glm::degrees(atan(direction.x / direction.z));
@@ -968,7 +953,7 @@ int main() {
 			camera.CamHeight = 0.2f; // Lie on the ground
 			camera.Pitch = 0.0f;
 			camera.Fov = camera.MaxFov;
-			camera.updateCameraVectors();
+			camera.UpdateCameraVectors();
 
 			lose_box.translate = camera.Position;
 			lose_box.translate.x += 0.5f * camera.Front.x;
@@ -983,7 +968,7 @@ int main() {
 			// win screen
 			camera.Pitch = 0.0f;
 			camera.Fov = camera.MaxFov;
-			camera.updateCameraVectors();
+			camera.UpdateCameraVectors();
 
 			win_box.translate = camera.Position;
 			win_box.translate.x += 0.5f * camera.Front.x;
@@ -1002,7 +987,7 @@ int main() {
 			if (lamp_carrying) {
 				lampYAngle = -camera.Yaw;
 			} else {
-				lampYAngle = sin(glfwGetTime()) * 90.0f;
+				lampYAngle = sin(currentFrame) * 45.0f;
 			}
 
 			Box lampShaft(&tex_wood_diffuse, &tex_wood_specular);
@@ -1028,7 +1013,7 @@ int main() {
 			lamp_shader.setMat4("projection", projection);
 			lamp_shader.setMat4("view", view);
 
-			Box lampLight(&tex_red_bright_diffuse, &tex_red_specular);
+			Box lampLight(&tex_red_bright_diffuse, &tex_red_bright_specular);
 			lampLight.translate = light_pos;
 			lampLight.scale = glm::vec3(0.01f);
 			lampLight.yAngle = lampYAngle;
@@ -1053,18 +1038,19 @@ int main() {
 	return EXIT_SUCCESS;
 }
 
+// Increase the animation value for a given door
 void doorAnimationStep(DoorStage stage) {
 	doorAnimationStep(stage, 1.0f);
 }
 
+// Increase the animation value for a given door
 void doorAnimationStep(DoorStage stage, float max) {
 	if (door_stage > stage && door_anim[stage] < max) {
 		door_anim[stage] = min(max, door_anim[stage] + delta_time / 2);
 	}
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
+// Process keyboard input
 void processInput(GLFWwindow *window) {
 	// Window closing
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -1186,6 +1172,7 @@ void processInput(GLFWwindow *window) {
 	}
 }
 
+// Sets all of the state of the game
 void initialiseState() {
 	// camera
 	camera.Position = glm::vec3(0.0f, CAM_HEIGHT, 3.0f);
@@ -1196,7 +1183,7 @@ void initialiseState() {
 	fov = 60.0f;
 	camera.Yaw = -90.0f;
 	camera.Pitch = 0.0f;
-	camera.updateCameraVectors();
+	camera.UpdateCameraVectors();
 
 	bad_guy.CamHeight = CAM_HEIGHT;
 	bad_guy.Position = glm::vec3(0.0f, CAM_HEIGHT, 9.0f);
@@ -1238,6 +1225,7 @@ void initialiseState() {
 	game_stage = PLAYING;
 }
 
+// Determines min and max values of x and z that can be travelled within by the pos
 void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad, glm::vec3 pos) {
 	// Start with large bounds
 	minX = pos.x - 0.7f;
@@ -1288,18 +1276,19 @@ void computeBounds(float& minX, float& maxX, float& minZ, float& maxZ, float pad
 	}
 }
 
+// Checks if a box is within a certain range
 bool checkBoxRange(Box box, float range = BTN_RANGE) {
 	return glm::length(camera.Position - box.translate) <= range;
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
+// GLFW Window resize callback
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	// make sure the viewport matches the new window dimensions; note that width and 
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
 }
 
+// Load a texture from the specified exact path
 unsigned int loadTexture(char const* path) {
 
 	unsigned int textureID;
@@ -1338,8 +1327,7 @@ unsigned int loadTexture(char const* path) {
 	return textureID;
 }
 
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
+// Process mouse input
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
 	if (game_stage == PLAYING) {
@@ -1360,8 +1348,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 	}
 }
 
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ----------------------------------------------------------------------
+// Process scroll input
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 	if (game_stage == PLAYING) {
 		camera.ProcessMouseScroll(yoffset);

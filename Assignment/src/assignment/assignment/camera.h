@@ -43,10 +43,12 @@ public:
     // Camera options
     float MovementSpeed;
     float MouseSensitivity;
-    float Fov;
 
+    // Y Height camera is always at
     float CamHeight;
 
+    // FOV/Zoom
+    float Fov;
     float MinFov = 45.0f;
     float MaxFov = 90.0f;
 
@@ -58,7 +60,7 @@ public:
         Yaw = yaw;
         Pitch = pitch;
         CamHeight = position.y;
-        updateCameraVectors();
+        UpdateCameraVectors();
     }
     // Constructor with scalar values
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Fov(ZOOM)
@@ -68,7 +70,7 @@ public:
         Yaw = yaw;
         Pitch = pitch;
         CamHeight = posY;
-        updateCameraVectors();
+        UpdateCameraVectors();
     }
 
     // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
@@ -97,10 +99,10 @@ public:
                 Position += Right * velocity;
                 break;
         }
+
+        // Adjust for bounds
         Position.x = med(minX, maxX, Position.x);
         Position.z = med(minZ, maxZ, Position.z);
-
-        // Ensure user stays at y = 0
         Position.y = CamHeight;
     }
 
@@ -116,7 +118,7 @@ public:
         Pitch = med(-89.0f, 89.0f, Pitch);
 
         // Update Front, Right and Up Vectors using the updated Euler angles
-        updateCameraVectors();
+        UpdateCameraVectors();
     }
 
     // Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
@@ -127,7 +129,7 @@ public:
     }
 
     // Calculates the front vector from the Camera's (updated) Euler Angles
-    void updateCameraVectors()
+    void UpdateCameraVectors()
     {
         // Calculate the new Front vector
         glm::vec3 front;
