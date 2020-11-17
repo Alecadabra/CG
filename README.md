@@ -18,4 +18,6 @@ Syllabus:
 
 ## [Assignment](Assignment)
 
-<!-- TODO -->
+A small video game in OpenGL and C++. The player controls a camera with mouse and
+keyboard and must get past a series of simple door puzzles while not getting
+caught by the enemy.
