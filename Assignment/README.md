@@ -50,9 +50,10 @@ Under `build/`.
 ./bin/assignment/assignment__assignment
 ```
 
-If all goes well, the game window should pop up. If in a VM, you may
-need to change the mouse settings for the mouse input to work
-correctly, e.g. disable mouse integration in Virtualbox.
+If all goes well, the game window should pop up.
+
+If in Virtualbox, you may need to disable mouse integration for
+the mouse input to work correctly.
 
 ---
 
@@ -101,7 +102,7 @@ Toggle between dim and bright ambient lighting with `O`.
 
 ### Source Files
 
-All located in `src/assignment/assignment/`.
+All located in [src/assignment/assignment/](src/assignment/assignment/).
 
 #### `assignment.cpp`
 
@@ -127,6 +128,6 @@ Fragment shader for the light source.
 
 Vertex shader for the light source.
 
-#### `vertex.vs
+#### `vertex.vs`
 
 Vertex shader.
